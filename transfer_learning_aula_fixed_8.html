@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfer Learning — ENG4502 · PUC-Rio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --card:      #21262d;
+      --border:    #30363d;
+      --accent:    #58a6ff;
+      --green:     #3fb950;
+      --orange:    #f78166;
+      --purple:    #bc8cff;
+      --yellow:    #e3b341;
+      --text:      #e6edf3;
+      --text-muted:#8b949e;
+      --radius:    12px;
+    }
+
+    html { height: 100%; }
+    body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #000; position: relative; }
+
+    /* ─── Slide Container ─── */
+    .deck {
+      width: 1280px; height: 720px;
+      position: absolute; top: 0; left: 0;
+      transform-origin: 0 0;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute; inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: 60px 80px;
+      animation: fadeIn .35s ease;
+    }
+    .slide.active { display: flex; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── Progress Bar ─── */
+    #progress-bar {
+      position: absolute; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      transition: width .3s ease;
+      z-index: 100;
+    }
+
+    /* ─── Slide Number ─── */
+    #slide-num {
+      position: absolute; bottom: 28px; right: 36px;
+      font-size: 13px; color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      z-index: 100;
+    }
+
+    /* ─── Navigation Buttons ─── */
+    .nav-btn {
+      position: absolute; bottom: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px;
+      padding: 8px 20px; font-size: 14px; cursor: pointer;
+      transition: all .2s; font-family: 'Inter', sans-serif;
+      z-index: 100;
+    }
+    .nav-btn:hover { background: var(--card); border-color: var(--accent); color: var(--accent); }
+    #btn-prev { left: 36px; }
+
+    /* ─── Q&A Accordion ─── */
+    .qa-wrap { border-radius: 10px; overflow: hidden; }
+    .qa-btn {
+      width: 100%; display: flex; align-items: center; gap: 12px;
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); padding: 13px 18px; cursor: pointer;
+      font-size: 15.5px; font-family: 'Inter', sans-serif;
+      border-radius: 10px; transition: all .2s; line-height: 1.5;
+    }
+    .qa-btn:hover { background: #2d333b; border-color: var(--accent); }
+    .qa-btn.open { border-radius: 10px 10px 0 0; border-color: var(--accent); }
+    .qa-arrow { font-size: 12px; color: var(--text-muted); transition: transform .25s; flex-shrink: 0; }
+    .qa-btn.open .qa-arrow { transform: rotate(90deg); }
+    .qa-ans {
+      background: var(--surface); border: 1px solid var(--accent);
+      border-top: none; border-radius: 0 0 10px 10px;
+      padding: 14px 20px; font-size: 15px; line-height: 1.75;
+    }
+    #btn-next { left: 110px; }
+
+    /* ─── Shared Layout ─── */
+    .slide-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 36px;
+    }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 20px;
+      background: rgba(88,166,255,.15); color: var(--accent); border: 1px solid rgba(88,166,255,.3);
+    }
+    .tag.green  { background: rgba(63,185,80,.15);  color: var(--green);  border-color: rgba(63,185,80,.3);  }
+    .tag.orange { background: rgba(247,129,102,.15); color: var(--orange); border-color: rgba(247,129,102,.3); }
+    .tag.purple { background: rgba(188,140,255,.15); color: var(--purple); border-color: rgba(188,140,255,.3); }
+    .tag.yellow { background: rgba(227,179,65,.15);  color: var(--yellow); border-color: rgba(227,179,65,.3); }
+
+    h1 { font-size: 44.8px; font-weight: 800; line-height: 1.15; }
+    h2 { font-size: 32.0px; font-weight: 700; line-height: 1.2; }
+    h3 { font-size: 20.5px; font-weight: 600; }
+    p  { font-size: 17.9px; line-height: 1.7; color: var(--text-muted); }
+
+    /* ─── Cards ─── */
+    .card-grid {
+      display: grid; gap: 20px;
+      flex: 1; align-content: start;
+    }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px 28px;
+      transition: border-color .2s;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card .card-icon { font-size: 28px; margin-bottom: 12px; }
+    .card h3 { color: var(--text); margin-bottom: 8px; }
+    .card p  { font-size: 14px; }
+
+    .card.accent { border-color: rgba(88,166,255,.4); background: rgba(88,166,255,.05); }
+    .card.green  { border-color: rgba(63,185,80,.4);  background: rgba(63,185,80,.05);  }
+    .card.orange { border-color: rgba(247,129,102,.4);background: rgba(247,129,102,.05);}
+    .card.purple { border-color: rgba(188,140,255,.4); background: rgba(188,140,255,.05);}
+
+    /* ─── Lists ─── */
+    .list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .list li {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px;
+      font-size: 16.6px; line-height: 1.6;
+    }
+    .list li .bullet {
+      min-width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(88,166,255,.15); color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+    }
+    .list li .bullet.green  { background: rgba(63,185,80,.15);  color: var(--green);  }
+    .list li .bullet.orange { background: rgba(247,129,102,.15); color: var(--orange); }
+    .list li .bullet.purple { background: rgba(188,140,255,.15); color: var(--purple); }
+    .list li .bullet.yellow { background: rgba(227,179,65,.15);  color: var(--yellow); }
+
+    /* ─── Code Block ─── */
+    pre {
+      background: #0d1117; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px 26px;
+      overflow-x: auto; font-family: 'JetBrains Mono', monospace;
+      font-size: 14.0px; line-height: 1.75;
+    }
+    .kw   { color: #ff7b72; }   /* keywords */
+    .fn   { color: #d2a8ff; }   /* functions */
+    .str  { color: #a5d6ff; }   /* strings */
+    .cmt  { color: #8b949e; font-style: italic; }  /* comments */
+    .num  { color: #79c0ff; }   /* numbers */
+    .cls  { color: #ffa657; }   /* classes */
+
+    /* ─── Comparison Table ─── */
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 15.0px;
+    }
+    thead th {
+      background: var(--card); color: var(--accent);
+      padding: 12px 18px; text-align: left; font-weight: 600;
+      border-bottom: 2px solid var(--border);
+    }
+    tbody td {
+      padding: 12px 18px; border-bottom: 1px solid var(--border);
+      color: var(--text-muted); vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(88,166,255,.04); }
+    .good { color: var(--green); font-weight: 600; }
+    .bad  { color: var(--orange); font-weight: 600; }
+
+    /* ─── Pipeline Steps ─── */
+    .pipeline {
+      display: flex; align-items: center; gap: 0;
+      flex: 1; justify-content: center;
+    }
+    .step {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; flex: 1;
+    }
+    .step-box {
+      width: 100%; max-width: 160px; padding: 18px 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); text-align: center;
+      font-size: 14.0px; font-weight: 500;
+      transition: border-color .2s;
+    }
+    .step-box:hover { border-color: var(--accent); }
+    .step-box .step-icon { font-size: 22px; margin-bottom: 6px; }
+    .step-arrow {
+      color: var(--text-muted); font-size: 20px; flex-shrink: 0; padding: 0 4px;
+    }
+
+    /* ─── Quote Block ─── */
+    .quote-block {
+      background: rgba(88,166,255,.07); border-left: 4px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 20px 28px; margin: 16px 0;
+    }
+    .quote-block p { color: var(--text); font-size: 19.2px; font-style: italic; }
+    .quote-block .source { margin-top: 10px; font-size: 13px; color: var(--text-muted); font-style: normal; }
+
+    /* ─── Title Slide ─── */
+    .title-slide {
+      background: radial-gradient(ellipse at 30% 50%, rgba(88,166,255,.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(188,140,255,.06) 0%, transparent 50%),
+                  var(--bg);
+      justify-content: center; gap: 32px;
+    }
+    .title-meta { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* ─── Two-column layout ─── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+    .two-col.left-wide { grid-template-columns: 3fr 2fr; }
+
+    /* ─── Highlight badge ─── */
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; vertical-align: middle;
+    }
+    .badge.blue   { background: rgba(88,166,255,.2); color: var(--accent); }
+    .badge.green  { background: rgba(63,185,80,.2);  color: var(--green);  }
+    .badge.orange { background: rgba(247,129,102,.2);color: var(--orange); }
+
+    /* ─── Metric box ─── */
+    .metric-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      text-align: center;
+    }
+    .metric-box .metric-val {
+      font-size: 51.2px; font-weight: 800; color: var(--accent);
+      line-height: 1;
+    }
+    .metric-box .metric-label {
+      font-size: 13px; color: var(--text-muted); margin-top: 6px;
+    }
+
+    /* ─── Spacer ─── */
+    .spacer { flex: 1; }
+
+    /* ─── Footer ─── */
+    .slide-footer {
+      margin-top: auto; padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; color: var(--text-muted);
+    }
+
+    /* ─── Divider ─── */
+    hr.divider {
+      border: none; border-top: 1px solid var(--border); margin: 16px 0;
+    }
+
+    /* ─── Full-width info strip ─── */
+    .info-strip {
+      background: rgba(227,179,65,.08); border: 1px solid rgba(227,179,65,.3);
+      border-radius: var(--radius); padding: 14px 22px;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: var(--yellow);
+    }
+
+  </style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<div id="progress-bar"></div>
+<div id="slide-num"></div>
+<button class="nav-btn" id="btn-prev">← Anterior</button>
+<button class="nav-btn" id="btn-next">Próximo →</button>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 1 — CAPA                            -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide title-slide active">
+    <div class="title-meta">
+      <span class="tag">ENG4502 — Introdução à Ciência de Dados</span>
+      <span class="tag purple">PUC-Rio · 4° Período</span>
+    </div>
+
+    <div>
+      <h1 style="font-size:64.0px; background: linear-gradient(135deg,#e6edf3,#58a6ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+        Transfer Learning
+      </h1>
+      <p style="font-size:25.6px; margin-top:12px; color:var(--text-muted);">
+        Reutilizando conhecimento para aprender mais rápido
+      </p>
+    </div>
+
+    <div class="card-grid cols-3" style="max-width:700px;">
+      <div class="card">
+        <div class="card-icon">📖</div>
+        <h3 style="font-size:13px;">Livro base</h3>
+        <p>Wang &amp; Chen, <em>Introduction to Transfer Learning</em>, 2023</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⏱️</div>
+        <h3 style="font-size:13px;">Duração da Aula</h3>
+        <p>2 horas (teoria + prática)</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧪</div>
+        <h3 style="font-size:13px;">Prática</h3>
+        <p>CIFAR-10 com ResNet-18 (PyTorch)</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>M.Sc. Rodrigo Huber Mendes</span>
+      <span>2025/2</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 2 — OBJETIVOS DA AULA               -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag green">Objetivos</span>
+      <h2>O que você vai aprender hoje</h2>
+    </div>
+
+    <ul class="list">
+      <li>
+        <span class="bullet">1</span>
+        <div>
+          <strong>Conceito</strong> — Entender o que é Transfer Learning e por que ele mudou o estado da arte em IA.
+        </div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div>
+          <strong>Estratégias</strong> — Diferenciar <em>feature extraction</em> de <em>fine-tuning</em> e saber quando usar cada um.
+        </div>
+      </li>
+      <li>
+        <span class="bullet green">3</span>
+        <div>
+          <strong>Pipeline</strong> — Percorrer as etapas completas: dados → modelo pré-treinado → adaptação → avaliação.
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange">4</span>
+        <div>
+          <strong>Prática</strong> — Implementar um classificador de imagens (CIFAR-10) usando ResNet-18 em PyTorch em poucos minutos de treino.
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple">5</span>
+        <div>
+          <strong>Métricas</strong> — Avaliar o modelo com acurácia, matriz de confusão e curva de loss.
+        </div>
+      </li>
+    </ul>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Objetivos</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 3 — CONTEXTUALIZAÇÃO (relembrar ICD)-->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag yellow">Lembrando…</span>
+      <h2>Ciclo de vida de Ciência de Dados</h2>
+    </div>
+
+    <p style="margin-bottom:28px;">Você já viu isso em ICD-02. Agora vamos ver <strong>onde o Transfer Learning se encaixa</strong> nesse ciclo.</p>
+
+    <div class="pipeline">
+      <div class="step">
+        <div class="step-box">
+          <div class="step-icon">🗂️</div>
+          Problema<br>definido
+        </div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-box">
+          <div class="step-icon">🔧</div>
+          Pré-processamento<br>de Dados
+        </div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-box" style="border-color: var(--accent); background: rgba(88,166,255,.08);">
+          <div class="step-icon">🤖</div>
+          <span style="color:var(--accent);">Modelo de Aprendizado</span><br>
+          <span style="font-size:11px; color:var(--accent);">(Transfer Learning aqui!)</span>
+        </div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-box">
+          <div class="step-icon">📊</div>
+          Pós-processamento<br>Avaliação de Métricas
+        </div>
+      </div>
+    </div>
+
+    <div class="info-strip" style="margin-top:28px;">
+      ⚡ Transfer Learning é uma técnica de <strong>Machine Learning</strong> — ela acontece na etapa de aprendizado do modelo, substituindo o treinamento do zero por uma transferência, aproveitamento ou alavancagem de aprendizagem prévia.
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Contextualização</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 4 — DEFINIÇÃO FORMAL                -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag">Conceito</span>
+      <h2>O que é Transfer Learning?</h2>
+    </div>
+
+    <div class="quote-block">
+      <p>"Transfer Learning consiste em aproveitar o conhecimento adquirido por um modelo em uma tarefa <em>fonte</em> (source) para melhorar o aprendizado em uma tarefa <em>alvo</em> (target), especialmente quando os dados rotulados da tarefa alvo são escassos."</p>
+      <div class="source">— Wang &amp; Chen (2023), <em>Introduction to Transfer Learning: Algorithms and Practice</em>, §1.2</div>
+    </div>
+
+    <div class="card-grid cols-2" style="margin-top:24px;">
+      <div class="card">
+        <h3 style="color:var(--accent);">🎯 Tarefa Fonte (Source)</h3>
+        <hr class="divider">
+        <p>Modelo treinado em grande base de dados. Ex.: ResNet-18 treinado em <strong>ImageNet</strong> (1,2 milhão de imagens, 1000 classes).</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--green);">🎯 Tarefa Alvo (Target)</h3>
+        <hr class="divider">
+        <p>Problema que queremos resolver com <strong>poucos dados</strong>. Ex.: classificar imagens de CIFAR-10 (10 classes, 50k imagens).</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Definição</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 5 — ANALOGIA DO MUNDO REAL          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag orange">Intuição</span>
+      <h2>Por que funciona? Uma analogia</h2>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <p style="color:var(--text); font-size:18.0px; margin-bottom:20px;">
+          Você já aprendeu a andar de bicicleta. Quando você tenta andar de moto pela primeira vez, <strong>não começa do zero</strong> — você já sabe o que é equilíbrio, como virar, como travar.
+        </p>
+        <p style="font-size:16.0px;">
+          Em visão computacional funciona igual: um modelo que aprendeu a detectar bordas, texturas e formas em ImageNet <strong>já sabe "ver"</strong>. Basta ensinar o que são as suas novas classes.
+        </p>
+        <div class="info-strip" style="margin-top:20px; font-size:13px;">
+          💡 As camadas convolucionais iniciais aprendem detectores genéricos (bordas, cores, gradientes) que são úteis em diversas tarefas de visão.
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="card green">
+          <div class="card-icon">🚲</div>
+          <h3>Bicicleta = ImageNet</h3>
+          <p>Habilidade genérica aprendida com muitos dados e esforço.</p>
+        </div>
+        <div class="card accent">
+          <div class="card-icon">🏍️</div>
+          <h3>Moto = CIFAR-10</h3>
+          <p>Nova tarefa aprendida rapidamente aproveitando o conhecimento anterior.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Intuição</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 6 — DUAS ESTRATÉGIAS PRINCIPAIS     -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag purple">Estratégias</span>
+      <h2>Feature Extraction vs. Fine-Tuning</h2>
+    </div>
+
+    <div class="card-grid cols-2" style="margin-bottom:24px;">
+      <div class="card accent" style="padding:28px;">
+        <div class="card-icon">🧊 Feature Extraction</div>
+        <hr class="divider">
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--text-muted);">
+          <li>✅ Congela <strong>todas</strong> as camadas do backbone</li>
+          <li>✅ Treina <strong>apenas a camada final</strong> (classificador)</li>
+          <li>✅ Muito rápido — poucos parâmetros para atualizar</li>
+          <li>✅ Ideal quando há <strong>poucos dados</strong> na tarefa alvo</li>
+          <li>⚠️ Menos flexível — features fixas do domínio fonte</li>
+        </ul>
+      </div>
+      <div class="card orange" style="padding:28px;">
+        <div class="card-icon">🔥 Fine-Tuning</div>
+        <hr class="divider">
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--text-muted);">
+          <li>✅ Descongela parte (ou todas) as camadas</li>
+          <li>✅ Adapta as features ao domínio alvo</li>
+          <li>✅ Melhor performance quando há <strong>dados suficientes</strong></li>
+          <li>⚠️ Mais lento — muitos parâmetros para atualizar</li>
+          <li>⚠️ Risco de <strong>overfitting</strong> com datasets pequenos</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-strip">
+      📌 <strong>Na prática de hoje</strong> usaremos <strong>Feature Extraction</strong> — mais simples, mais rápido, e já demonstra ganhos expressivos de acurácia.
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Estratégias</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 7 — COMPARAÇÃO (TABELA DO LIVRO)    -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag">Comparação</span>
+      <h2>Quando usar cada estratégia?</h2>
+    </div>
+
+    <p style="margin-bottom:20px;">Adaptado de <em>Wang &amp; Chen (2023), Table 2</em> — um guia prático para escolher a abordagem certa.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Critério</th>
+          <th>Feature Extraction</th>
+          <th>Fine-Tuning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tamanho do dataset alvo</td>
+          <td class="good">Pequeno (&lt; 5k amostras)</td>
+          <td class="good">Médio/Grande (&gt; 10k)</td>
+        </tr>
+        <tr>
+          <td>Similaridade com fonte</td>
+          <td><span class="badge blue">Alta</span> (ex.: outras imagens naturais)</td>
+          <td><span class="badge green">Baixa–Alta</span> (qualquer)</td>
+        </tr>
+        <tr>
+          <td>Tempo de treinamento</td>
+          <td class="good">Muito rápido (minutos)</td>
+          <td class="bad">Lento (horas)</td>
+        </tr>
+        <tr>
+          <td>Risco de overfitting</td>
+          <td class="good">Baixo</td>
+          <td class="bad">Alto (sem regularização)</td>
+        </tr>
+        <tr>
+          <td>Capacidade de adaptação</td>
+          <td class="bad">Limitada</td>
+          <td class="good">Alta</td>
+        </tr>
+        <tr>
+          <td>Recursos computacionais</td>
+          <td class="good">CPU suficiente</td>
+          <td class="bad">GPU recomendada</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Comparação</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 8 — ARQUITETURA ResNet-18           -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag">Modelo</span>
+      <h2>O modelo pré-treinado: ResNet-18</h2>
+    </div>
+
+    <div class="two-col left-wide">
+      <div>
+        <ul class="list">
+          <li>
+            <span class="bullet">📐</span>
+            <div>
+              <strong>Arquitetura:</strong> 18 camadas convolucionais com <em>conexões residuais</em> (skip connections) — arquitetura complexa.
+            </div>
+          </li>
+          <li>
+            <span class="bullet green">🏋️</span>
+            <div>
+              <strong>Pré-treinado em ImageNet:</strong> 1,2 milhão de imagens e 1000 classes. O modelo já aprendeu representações visuais ricas e generalizáveis.
+            </div>
+          </li>
+          <li>
+            <span class="bullet orange">✂️</span>
+            <div>
+              <strong>Adaptação para CIFAR-10:</strong> Substituímos apenas a camada final (<code>fc</code>): de 1000 → 10 saídas.
+            </div>
+          </li>
+          <li>
+            <span class="bullet purple">🔒</span>
+            <div>
+              <strong>Congelamento:</strong> em todos os parâmetros (Feature Extraction da arquitetura da rede e seus pesos) apenas a nova camada <code>fc</code> é treinada ou Fine Tunning Parcial/Total (Apenas alguma camadas são re-treinadas).
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="metric-box">
+          <div class="metric-val">11M</div>
+          <div class="metric-label">Parâmetros totais ResNet-18</div>
+        </div>
+        <div class="metric-box" style="border-color:rgba(63,185,80,.4);">
+          <div class="metric-val" style="color:var(--green)">5.1K</div>
+          <div class="metric-label">Parâmetros treináveis (apenas fc)<br>= 512 × 10 + 10 bias</div>
+        </div>
+        <div class="metric-box" style="border-color:rgba(247,129,102,.4);">
+          <div class="metric-val" style="color:var(--orange)">~8min</div>
+          <div class="metric-label">Tempo estimado em CPU (5 épocas)</div>
+        </div>
+      </div>
+    </div>
+<a href="https://i.ytimg.com/vi/woEs7UCaITo/maxresdefault.jpg" target="_blank" style="color: var(--orange); text-decoration: none; font-weight: 500;">
+  Diagrama de arquitetura da ResNet\PyTorch ↗
+</a>
+
+<a href="https://www.kaggle.com/code/iamtapendu/introduction-to-resnet-18" target="_blank" style="color: var(--orange); text-decoration: none; font-weight: 500;">
+  Introduction to resnet-18 Kaggle↗
+</a>
+
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>ResNet-18</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 9A — CIFAR-10                        -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag" style="background:rgba(88,166,255,.15);color:var(--accent);border-color:rgba(88,166,255,.3);">Dataset</span>
+      <h2>CIFAR-10 — o que vamos classificar</h2>
+    </div>
+
+    <div style="display:flex;gap:36px;flex:1;min-height:0;margin-top:4px;">
+
+      <!-- 10 classes -->
+      <div style="flex:1.5;">
+        <p style="color:var(--text-muted);font-size:13px;margin-bottom:14px;">10 classes balanceadas — 6.000 imagens por classe (5.000 treino + 1.000 validação)</p>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">✈️</div><div style="font-size:11px;color:var(--text-muted);">airplane</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🚗</div><div style="font-size:11px;color:var(--text-muted);">automobile</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🐦</div><div style="font-size:11px;color:var(--text-muted);">bird</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🐱</div><div style="font-size:11px;color:var(--text-muted);">cat</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🦌</div><div style="font-size:11px;color:var(--text-muted);">deer</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🐶</div><div style="font-size:11px;color:var(--text-muted);">dog</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🐸</div><div style="font-size:11px;color:var(--text-muted);">frog</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🐴</div><div style="font-size:11px;color:var(--text-muted);">horse</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🚢</div><div style="font-size:11px;color:var(--text-muted);">ship</div></div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 8px;text-align:center;"><div style="font-size:30px;margin-bottom:6px;">🚛</div><div style="font-size:11px;color:var(--text-muted);">truck</div></div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px;">
+        <div class="card accent" style="padding:18px 20px;">
+          <div style="font-size:30px;font-weight:800;color:var(--accent);line-height:1;">60.000</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">imagens no total · <strong style="color:var(--text);">32×32 px</strong> · RGB</div>
+        </div>
+        <div class="card" style="padding:18px 20px;border-color:var(--green);">
+          <div style="font-size:30px;font-weight:800;color:var(--green);line-height:1;">10</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">classes perfeitamente balanceadas — 6.000 imagens cada</div>
+        </div>
+        <div class="card" style="padding:18px 20px;border-color:var(--purple);">
+          <div style="font-size:30px;font-weight:800;color:var(--purple);line-height:1;">5.000</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">imagens nesta aula — <em>subset balanceado</em>, 500 por classe</div>
+        </div>
+        <div class="info-strip" style="font-size:12.5px;">
+          📌 Criado por Krizhevsky (2009). Benchmark clássico em visão computacional — simples o suficiente para rodar em CPU, diversificado o suficiente para ser didático.
+        </div>
+      </div>
+    </div>
+
+<a href="https://datasets-dev.10web.me/wp-content/uploads/2022/09/CIFAR-10-dataset-Activeloop-Platform-visualization-image-1.webp" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: 500;">
+  Clique para ver imagens reais do CIFAR-10 ↗
+</a>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>CIFAR-10</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- SLIDE 9B — RESNET-18: ARQUITETURA + ESTRATÉGIAS       -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <section class="slide" style="padding:36px 60px;">
+    <div class="slide-header">
+      <span class="tag orange">Arquitetura</span>
+      <h2>ResNet-18: O que congela e o que treina?</h2>
+    </div>
+
+    <!-- ── Arquitetura: diagrama de neurônios ── -->
+    <div style="display:flex;justify-content:center;margin-bottom:16px;">
+      <svg width="100%" viewBox="0 0 640 175" xmlns="http://www.w3.org/2000/svg" style="max-height:215px;">
+
+        <!-- ─── Fundo dos grupos ─── -->
+        <rect x="41" y="6" width="22" height="132" rx="7" fill="rgba(48,54,61,0.5)" stroke="#30363d" stroke-width="1.2"/>
+        <rect x="76" y="6" width="108" height="132" rx="8" fill="rgba(88,166,255,0.07)" stroke="rgba(88,166,255,0.4)" stroke-width="1.2"/>
+        <rect x="198" y="6" width="108" height="132" rx="8" fill="rgba(63,185,80,0.07)" stroke="rgba(63,185,80,0.4)" stroke-width="1.2"/>
+        <rect x="320" y="6" width="108" height="132" rx="8" fill="rgba(188,140,255,0.07)" stroke="rgba(188,140,255,0.4)" stroke-width="1.2"/>
+        <rect x="442" y="6" width="108" height="132" rx="8" fill="rgba(247,129,102,0.07)" stroke="rgba(247,129,102,0.4)" stroke-width="1.2"/>
+        <rect x="564" y="6" width="24" height="132" rx="7" fill="rgba(227,179,65,0.1)" stroke="rgba(227,179,65,0.45)" stroke-width="1.2"/>
+
+        <!-- ─── Conexões entre grupos (fan representativo) ─── -->
+        <!-- Entrada → conv1 -->
+        <line x1="18" y1="18" x2="41" y2="18" stroke="#30363d" stroke-width="0.8" opacity="0.7"/>
+        <line x1="18" y1="126" x2="41" y2="126" stroke="#30363d" stroke-width="0.8" opacity="0.7"/>
+        <line x1="18" y1="72" x2="41" y2="72" stroke="#30363d" stroke-width="0.8" opacity="0.7"/>
+        <line x1="18" y1="18" x2="41" y2="126" stroke="#30363d" stroke-width="0.5" opacity="0.3"/>
+        <line x1="18" y1="126" x2="41" y2="18" stroke="#30363d" stroke-width="0.5" opacity="0.3"/>
+        <!-- conv1 → L1 -->
+        <line x1="58" y1="18" x2="76" y2="18" stroke="rgba(88,166,255,0.6)" stroke-width="0.8"/>
+        <line x1="58" y1="126" x2="76" y2="126" stroke="rgba(88,166,255,0.6)" stroke-width="0.8"/>
+        <line x1="58" y1="72" x2="76" y2="72" stroke="rgba(88,166,255,0.6)" stroke-width="0.8"/>
+        <line x1="58" y1="18" x2="76" y2="126" stroke="rgba(88,166,255,0.25)" stroke-width="0.5"/>
+        <line x1="58" y1="126" x2="76" y2="18" stroke="rgba(88,166,255,0.25)" stroke-width="0.5"/>
+        <!-- L1 → L2 -->
+        <line x1="178" y1="18" x2="198" y2="18" stroke="rgba(63,185,80,0.6)" stroke-width="0.8"/>
+        <line x1="178" y1="126" x2="198" y2="126" stroke="rgba(63,185,80,0.6)" stroke-width="0.8"/>
+        <line x1="178" y1="72" x2="198" y2="72" stroke="rgba(63,185,80,0.6)" stroke-width="0.8"/>
+        <line x1="178" y1="18" x2="198" y2="126" stroke="rgba(63,185,80,0.25)" stroke-width="0.5"/>
+        <line x1="178" y1="126" x2="198" y2="18" stroke="rgba(63,185,80,0.25)" stroke-width="0.5"/>
+        <!-- L2 → L3 -->
+        <line x1="300" y1="18" x2="320" y2="18" stroke="rgba(188,140,255,0.6)" stroke-width="0.8"/>
+        <line x1="300" y1="126" x2="320" y2="126" stroke="rgba(188,140,255,0.6)" stroke-width="0.8"/>
+        <line x1="300" y1="72" x2="320" y2="72" stroke="rgba(188,140,255,0.6)" stroke-width="0.8"/>
+        <line x1="300" y1="18" x2="320" y2="126" stroke="rgba(188,140,255,0.25)" stroke-width="0.5"/>
+        <line x1="300" y1="126" x2="320" y2="18" stroke="rgba(188,140,255,0.25)" stroke-width="0.5"/>
+        <!-- L3 → L4 -->
+        <line x1="422" y1="18" x2="442" y2="18" stroke="rgba(247,129,102,0.6)" stroke-width="0.8"/>
+        <line x1="422" y1="126" x2="442" y2="126" stroke="rgba(247,129,102,0.6)" stroke-width="0.8"/>
+        <line x1="422" y1="72" x2="442" y2="72" stroke="rgba(247,129,102,0.6)" stroke-width="0.8"/>
+        <line x1="422" y1="18" x2="442" y2="126" stroke="rgba(247,129,102,0.25)" stroke-width="0.5"/>
+        <line x1="422" y1="126" x2="442" y2="18" stroke="rgba(247,129,102,0.25)" stroke-width="0.5"/>
+        <!-- L4 → fc -->
+        <line x1="544" y1="18" x2="564" y2="18" stroke="rgba(227,179,65,0.6)" stroke-width="0.8"/>
+        <line x1="544" y1="126" x2="564" y2="126" stroke="rgba(227,179,65,0.6)" stroke-width="0.8"/>
+        <line x1="544" y1="72" x2="564" y2="72" stroke="rgba(227,179,65,0.6)" stroke-width="0.8"/>
+        <line x1="544" y1="18" x2="564" y2="126" stroke="rgba(227,179,65,0.25)" stroke-width="0.5"/>
+        <line x1="544" y1="126" x2="564" y2="18" stroke="rgba(227,179,65,0.25)" stroke-width="0.5"/>
+        <!-- fc → saída -->
+        <line x1="588" y1="40" x2="604" y2="28" stroke="rgba(227,179,65,0.35)" stroke-width="0.6"/>
+        <line x1="588" y1="72" x2="604" y2="72" stroke="rgba(227,179,65,0.35)" stroke-width="0.6"/>
+        <line x1="588" y1="104" x2="604" y2="116" stroke="rgba(227,179,65,0.35)" stroke-width="0.6"/>
+
+        <!-- ─── NEURÔNIOS ─── -->
+        <!-- Entrada (6 nós cinza claro) -->
+        <circle cx="12" cy="18" r="5" fill="#161b22" stroke="#484f58" stroke-width="1.2"/>
+        <circle cx="12" cy="40" r="5" fill="#161b22" stroke="#484f58" stroke-width="1.2"/>
+        <circle cx="12" cy="62" r="5" fill="#161b22" stroke="#484f58" stroke-width="1.2"/>
+        <circle cx="12" cy="84" r="5" fill="#161b22" stroke="#484f58" stroke-width="1.2"/>
+        <circle cx="12" cy="106" r="5" fill="#161b22" stroke="#484f58" stroke-width="1.2"/>
+        <circle cx="12" cy="126" r="5" fill="#161b22" stroke="#484f58" stroke-width="1.2"/>
+        <!-- conv1 (1 coluna, cinza) -->
+        <circle cx="52" cy="18" r="6" fill="rgba(48,54,61,0.9)" stroke="#6e7681" stroke-width="1.2"/>
+        <circle cx="52" cy="40" r="6" fill="rgba(48,54,61,0.9)" stroke="#6e7681" stroke-width="1.2"/>
+        <circle cx="52" cy="62" r="6" fill="rgba(48,54,61,0.9)" stroke="#6e7681" stroke-width="1.2"/>
+        <circle cx="52" cy="84" r="6" fill="rgba(48,54,61,0.9)" stroke="#6e7681" stroke-width="1.2"/>
+        <circle cx="52" cy="106" r="6" fill="rgba(48,54,61,0.9)" stroke="#6e7681" stroke-width="1.2"/>
+        <circle cx="52" cy="126" r="6" fill="rgba(48,54,61,0.9)" stroke="#6e7681" stroke-width="1.2"/>
+        <!-- Layer 1 (4 colunas, azul) x=88,116,144,172 -->
+        <circle cx="88"  cy="18" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="88"  cy="40" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="88"  cy="62" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="88"  cy="84" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="88"  cy="106" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="88"  cy="126" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/>
+        <circle cx="116" cy="18" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="116" cy="40" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="116" cy="62" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="116" cy="84" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="116" cy="106" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="116" cy="126" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/>
+        <circle cx="144" cy="18" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="144" cy="40" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="144" cy="62" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="144" cy="84" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="144" cy="106" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="144" cy="126" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/>
+        <circle cx="172" cy="18" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="172" cy="40" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="172" cy="62" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="172" cy="84" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="172" cy="106" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/><circle cx="172" cy="126" r="6" fill="rgba(88,166,255,0.3)" stroke="#58a6ff" stroke-width="1.2"/>
+        <!-- Layer 2 (4 colunas, verde) x=210,238,266,294 -->
+        <circle cx="210" cy="18" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="210" cy="40" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="210" cy="62" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="210" cy="84" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="210" cy="106" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="210" cy="126" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/>
+        <circle cx="238" cy="18" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="238" cy="40" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="238" cy="62" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="238" cy="84" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="238" cy="106" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="238" cy="126" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/>
+        <circle cx="266" cy="18" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="266" cy="40" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="266" cy="62" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="266" cy="84" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="266" cy="106" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="266" cy="126" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/>
+        <circle cx="294" cy="18" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="294" cy="40" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="294" cy="62" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="294" cy="84" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="294" cy="106" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/><circle cx="294" cy="126" r="6" fill="rgba(63,185,80,0.3)" stroke="#3fb950" stroke-width="1.2"/>
+        <!-- Layer 3 (4 colunas, roxo) x=332,360,388,416 -->
+        <circle cx="332" cy="18" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="332" cy="40" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="332" cy="62" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="332" cy="84" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="332" cy="106" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="332" cy="126" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/>
+        <circle cx="360" cy="18" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="360" cy="40" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="360" cy="62" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="360" cy="84" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="360" cy="106" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="360" cy="126" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/>
+        <circle cx="388" cy="18" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="388" cy="40" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="388" cy="62" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="388" cy="84" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="388" cy="106" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="388" cy="126" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/>
+        <circle cx="416" cy="18" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="416" cy="40" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="416" cy="62" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="416" cy="84" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="416" cy="106" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/><circle cx="416" cy="126" r="6" fill="rgba(188,140,255,0.3)" stroke="#bc8cff" stroke-width="1.2"/>
+        <!-- Layer 4 (4 colunas, laranja) x=454,482,510,538 -->
+        <circle cx="454" cy="18" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="454" cy="40" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="454" cy="62" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="454" cy="84" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="454" cy="106" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="454" cy="126" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/>
+        <circle cx="482" cy="18" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="482" cy="40" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="482" cy="62" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="482" cy="84" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="482" cy="106" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="482" cy="126" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/>
+        <circle cx="510" cy="18" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="510" cy="40" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="510" cy="62" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="510" cy="84" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="510" cy="106" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="510" cy="126" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/>
+        <circle cx="538" cy="18" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="538" cy="40" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="538" cy="62" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="538" cy="84" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="538" cy="106" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/><circle cx="538" cy="126" r="6" fill="rgba(247,129,102,0.3)" stroke="#f78166" stroke-width="1.2"/>
+        <!-- fc (1 coluna, amarelo) x=576 -->
+        <circle cx="576" cy="18" r="6" fill="rgba(227,179,65,0.4)" stroke="#e3b341" stroke-width="1.4"/>
+        <circle cx="576" cy="40" r="6" fill="rgba(227,179,65,0.4)" stroke="#e3b341" stroke-width="1.4"/>
+        <circle cx="576" cy="62" r="6" fill="rgba(227,179,65,0.4)" stroke="#e3b341" stroke-width="1.4"/>
+        <circle cx="576" cy="84" r="6" fill="rgba(227,179,65,0.4)" stroke="#e3b341" stroke-width="1.4"/>
+        <circle cx="576" cy="106" r="6" fill="rgba(227,179,65,0.4)" stroke="#e3b341" stroke-width="1.4"/>
+        <circle cx="576" cy="126" r="6" fill="rgba(227,179,65,0.4)" stroke="#e3b341" stroke-width="1.4"/>
+        <!-- Saída (3 pontos) -->
+        <circle cx="608" cy="40"  r="3.5" fill="#30363d" stroke="#484f58" stroke-width="1"/>
+        <circle cx="608" cy="72"  r="3.5" fill="#30363d" stroke="#484f58" stroke-width="1"/>
+        <circle cx="608" cy="104" r="3.5" fill="#30363d" stroke="#484f58" stroke-width="1"/>
+
+        <!-- ─── LABELS ─── -->
+        <text x="12"  y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="9"  fill="#484f58">Entrada</text>
+        <text x="52"  y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="9"  fill="#8b949e">conv1</text>
+        <text x="130" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="9"  fill="#58a6ff" font-weight="600">Layer 1</text>
+        <text x="130" y="159" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#484f58">4 convs · 64ch</text>
+        <text x="252" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="9"  fill="#3fb950" font-weight="600">Layer 2</text>
+        <text x="252" y="159" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#484f58">4 convs · 128ch</text>
+        <text x="374" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="9"  fill="#bc8cff" font-weight="600">Layer 3</text>
+        <text x="374" y="159" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#484f58">4 convs · 256ch</text>
+        <text x="496" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="9"  fill="#f78166" font-weight="600">Layer 4</text>
+        <text x="496" y="159" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#484f58">4 convs · 512ch</text>
+        <text x="576" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="9"  fill="#e3b341" font-weight="600">fc</text>
+        <text x="576" y="159" text-anchor="middle" font-family="Inter,sans-serif" font-size="7.5" fill="#484f58">512→10</text>
+        <text x="608" y="148" text-anchor="middle" font-family="Inter,sans-serif" font-size="9"  fill="#484f58">Saída</text>
+
+        <!-- ─── Brace 18 camadas ─── -->
+        <text x="320" y="172" text-anchor="middle" font-family="Inter,sans-serif" font-size="9" fill="#6e7681">← 18 camadas com pesos treináveis (1 + 4 + 4 + 4 + 4 + 1) →</text>
+      </svg>
+    </div>
+
+    <!-- ── Estratégias comparadas ── -->
+    <div style="display:flex;flex-direction:column;gap:11px;">
+
+      <!-- Legenda -->
+      <div style="display:flex;gap:24px;margin-bottom:2px;padding-left:200px;">
+        <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-muted);">
+          <div style="width:16px;height:16px;background:#21262d;border:1px solid #30363d;border-radius:3px;"></div> Congelado 🔒
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text-muted);">
+          <div style="width:16px;height:16px;background:rgba(88,166,255,.3);border:1px solid var(--accent);border-radius:3px;"></div> Treinado 🔥
+        </div>
+      </div>
+
+      <!-- ROW: Feature Extraction -->
+      <div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 18px;">
+        <div style="width:190px;flex-shrink:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--accent);">🧊 Feature Extraction</div>
+          <div style="font-size:12px;color:var(--text-muted);">Lab 1 · Colab</div>
+        </div>
+        <div style="display:flex;gap:5px;flex:1;align-items:center;">
+          <div style="flex:0.7;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 conv1</div>
+          <div style="color:#30363d;font-size:15px;">→</div>
+          <div style="flex:1;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 L1</div>
+          <div style="color:#30363d;font-size:15px;">→</div>
+          <div style="flex:1;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 L2</div>
+          <div style="color:#30363d;font-size:15px;">→</div>
+          <div style="flex:1.2;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 L3</div>
+          <div style="color:#30363d;font-size:15px;">→</div>
+          <div style="flex:1.4;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 L4</div>
+          <div style="color:var(--text-muted);font-size:15px;">→</div>
+          <div style="flex:0.8;background:rgba(88,166,255,.15);border:1.5px solid var(--accent);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--accent);font-weight:700;">🔥 fc</div>
+        </div>
+        <div style="width:210px;flex-shrink:0;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">5.1K params</span><span style="color:var(--green);font-weight:700;">74.5% · 13min</span></div>
+          <div style="background:var(--border);height:9px;border-radius:4px;overflow:hidden;"><div style="width:2%;background:var(--accent);height:100%;border-radius:4px;"></div></div>
+        </div>
+      </div>
+
+      <!-- ROW: Fine-Tuning Parcial -->
+      <div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 18px;">
+        <div style="width:190px;flex-shrink:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--purple);">⚡ Fine-Tuning Parcial</div>
+          <div style="font-size:12px;color:var(--text-muted);">Lab 2 · Homework</div>
+        </div>
+        <div style="display:flex;gap:5px;flex:1;align-items:center;">
+          <div style="flex:0.7;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 conv1</div>
+          <div style="color:#30363d;font-size:15px;">→</div>
+          <div style="flex:1;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 L1</div>
+          <div style="color:#30363d;font-size:15px;">→</div>
+          <div style="flex:1;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 L2</div>
+          <div style="color:#30363d;font-size:15px;">→</div>
+          <div style="flex:1.2;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 L3</div>
+          <div style="color:var(--text-muted);font-size:15px;">→</div>
+          <div style="flex:1.4;background:rgba(188,140,255,.15);border:1.5px solid var(--purple);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--purple);font-weight:700;">🔥 L4</div>
+          <div style="color:var(--text-muted);font-size:15px;">→</div>
+          <div style="flex:0.8;background:rgba(188,140,255,.15);border:1.5px solid var(--purple);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--purple);font-weight:700;">🔥 fc</div>
+        </div>
+        <div style="width:210px;flex-shrink:0;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">2.6M params</span><span style="color:var(--green);font-weight:700;">75.4% · 15min</span></div>
+          <div style="background:var(--border);height:9px;border-radius:4px;overflow:hidden;"><div style="width:23%;background:var(--purple);height:100%;border-radius:4px;"></div></div>
+        </div>
+      </div>
+
+      <!-- ROW: Fine-Tuning Completo -->
+      <div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid rgba(247,129,102,.3);border-radius:10px;padding:13px 18px;">
+        <div style="width:190px;flex-shrink:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--orange);">🔥 Fine-Tuning Completo</div>
+          <div style="font-size:12px;color:var(--text-muted);">Referência · ~2h CPU</div>
+        </div>
+        <div style="display:flex;gap:5px;flex:1;align-items:center;">
+          <div style="flex:0.7;background:rgba(247,129,102,.15);border:1.5px solid var(--orange);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--orange);font-weight:700;">🔥 conv1</div>
+          <div style="color:var(--text-muted);font-size:15px;">→</div>
+          <div style="flex:1;background:rgba(247,129,102,.15);border:1.5px solid var(--orange);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--orange);font-weight:700;">🔥 L1</div>
+          <div style="color:var(--text-muted);font-size:15px;">→</div>
+          <div style="flex:1;background:rgba(247,129,102,.15);border:1.5px solid var(--orange);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--orange);font-weight:700;">🔥 L2</div>
+          <div style="color:var(--text-muted);font-size:15px;">→</div>
+          <div style="flex:1.2;background:rgba(247,129,102,.15);border:1.5px solid var(--orange);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--orange);font-weight:700;">🔥 L3</div>
+          <div style="color:var(--text-muted);font-size:15px;">→</div>
+          <div style="flex:1.4;background:rgba(247,129,102,.15);border:1.5px solid var(--orange);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--orange);font-weight:700;">🔥 L4</div>
+          <div style="color:var(--text-muted);font-size:15px;">→</div>
+          <div style="flex:0.8;background:rgba(247,129,102,.15);border:1.5px solid var(--orange);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--orange);font-weight:700;">🔥 fc</div>
+        </div>
+        <div style="width:210px;flex-shrink:0;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">11.2M params</span><span style="color:var(--green);font-weight:700;">87.9% · 26min</span></div>
+          <div style="background:var(--border);height:9px;border-radius:4px;overflow:hidden;"><div style="width:100%;background:var(--orange);height:100%;border-radius:4px;"></div></div>
+        </div>
+      </div>
+
+    </div><!-- /estratégias -->
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>ResNet-18 — Arquitetura</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 9 — PIPELINE PASSO A PASSO          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag green">Pipeline</span>
+      <h2>Do dado ao modelo: passo a passo</h2>
+    </div>
+
+    <ul class="list">
+      <li>
+        <span class="bullet">1</span>
+        <div>
+          <strong>Dados</strong> — Carregar CIFAR-10 com <code>torchvision.datasets.CIFAR10</code>. Aplicar transforms: resize para 224×224 (input do ResNet), normalização.
+        </div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div>
+          <strong>Modelo</strong> — Instanciar ResNet-18 com pesos do ImageNet (<code>ResNet18_Weights.IMAGENET1K_V1</code>). Congelar backbone, trocar camada final.
+        </div>
+      </li>
+      <li>
+        <span class="bullet green">3</span>
+        <div>
+          <strong>Treinamento</strong> — Usar <code>SGD</code> (lr=0.01, momentum=0.9) apenas sobre os parâmetros da camada final. Loop de 5 épocas.
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange">4</span>
+        <div>
+          <strong>Avaliação</strong> — Calcular acurácia no conjunto de validação a cada época. Plotar curva de loss. Gerar matriz de confusão.
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple">5</span>
+        <div>
+          <strong>Análise</strong> — Comparar resultado com treino <em>do zero</em>. Discutir: o que muda se descongelarmos algumas camadas?
+        </div>
+      </li>
+    </ul>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Pipeline</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 10 — CÓDIGO PRINCIPAL               -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag orange">Código</span>
+      <h2>Implementação em PyTorch</h2>
+    </div>
+
+    <pre><span class="kw">import</span> torch, torch.nn <span class="kw">as</span> nn, torch.optim <span class="kw">as</span> optim
+<span class="kw">from</span> torchvision <span class="kw">import</span> datasets, transforms, models
+
+<span class="cmt"># ── 1. Transformações ────────────────────────────────────────</span>
+transform = transforms.<span class="fn">Compose</span>([
+    transforms.<span class="cls">Resize</span>(<span class="num">224</span>),                      <span class="cmt"># ResNet espera 224×224</span>
+    transforms.<span class="cls">ToTensor</span>(),
+    transforms.<span class="cls">Normalize</span>((<span class="num">0.5</span>,<span class="num">0.5</span>,<span class="num">0.5</span>), (<span class="num">0.5</span>,<span class="num">0.5</span>,<span class="num">0.5</span>))
+])
+
+<span class="cmt"># ── 2. Dataset e DataLoader ──────────────────────────────────</span>
+train_ds = datasets.<span class="cls">CIFAR10</span>(<span class="str">'data'</span>, train=<span class="kw">True</span>,  download=<span class="kw">True</span>, transform=transform)
+val_ds   = datasets.<span class="cls">CIFAR10</span>(<span class="str">'data'</span>, train=<span class="kw">False</span>, download=<span class="kw">True</span>, transform=transform)
+train_loader = torch.utils.data.<span class="fn">DataLoader</span>(train_ds, batch_size=<span class="num">128</span>, shuffle=<span class="kw">True</span>)
+val_loader   = torch.utils.data.<span class="fn">DataLoader</span>(val_ds,   batch_size=<span class="num">128</span>)
+
+<span class="cmt"># ── 3. Modelo pré-treinado + adaptação ──────────────────────</span>
+model = models.<span class="fn">resnet18</span>(weights=models.<span class="cls">ResNet18_Weights</span>.IMAGENET1K_V1)
+<span class="kw">for</span> p <span class="kw">in</span> model.<span class="fn">parameters</span>():
+    p.requires_grad = <span class="kw">False</span>            <span class="cmt"># ← congela backbone (feature extraction)</span>
+model.fc = nn.<span class="cls">Linear</span>(model.fc.in_features, <span class="num">10</span>)  <span class="cmt"># ← 10 classes CIFAR-10</span>
+
+<span class="cmt"># ── 4. Treinamento ───────────────────────────────────────────</span>
+optimizer = optim.<span class="cls">SGD</span>(model.fc.<span class="fn">parameters</span>(), lr=<span class="num">0.01</span>, momentum=<span class="num">0.9</span>)
+criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Código</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 11 — MÉTRICAS                       -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag yellow">Avaliação</span>
+      <h2>Métricas de avaliação</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">As métricas de classificação são aplicadas aqui diretamente para medir a qualidade do modelo treinado.</p>
+
+    <div class="card-grid cols-3">
+      <div class="card accent">
+        <div class="card-icon">🎯</div>
+        <h3>Acurácia</h3>
+        <hr class="divider">
+        <p>Proporção de previsões corretas sobre o total de amostras.</p>
+        <p style="margin-top:10px; font-family:'JetBrains Mono'; font-size:12px; color:var(--accent);">acc = corretos / total</p>
+      </div>
+      <div class="card green">
+        <div class="card-icon">📋</div>
+        <h3>Matriz de Confusão</h3>
+        <hr class="divider">
+        <p>Mostra <em>quais</em> classes o modelo confunde. Essencial para análise de erros.</p>
+      </div>
+      <div class="card purple">
+        <div class="card-icon">📉</div>
+        <h3>Curva de Loss</h3>
+        <hr class="divider">
+        <p>Acompanha convergência do treinamento. Identifica overfitting cedo.</p>
+      </div>
+    </div>
+
+    <div class="info-strip" style="margin-top:20px;">
+      📌 <strong>Resultado esperado:</strong> Feature Extraction com ResNet-18 em CIFAR-10 atinge <strong>~72-78% de acurácia em 5 épocas</strong>. Compare isso com treinar uma CNN do zero: ~55-60% nas mesmas condições.
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Métricas</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 12 — LIMITAÇÕES E CUIDADOS          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag orange">Cuidados</span>
+      <h2>Limitações e riscos do Transfer Learning</h2>
+    </div>
+
+    <div class="card-grid cols-2">
+      <div class="card orange">
+        <div class="card-icon">⚠️ Negative Transfer</div>
+        <hr class="divider">
+        <p>Quando o domínio fonte é <strong>muito diferente</strong> do alvo, o modelo pré-treinado pode prejudicar o aprendizado. Ex.: usar ResNet (imagens naturais) para diagnóstico por raio-X sem fine-tuning cuidadoso.</p>
+        <p style="margin-top:10px;font-size:0.78em;color:var(--yellow);">→ Questão 3 do dever de casa</p>
+      </div>
+      <div class="card orange">
+        <div class="card-icon">⚠️ Domain Shift</div>
+        <hr class="divider">
+        <p>A distribuição dos dados fonte e alvo é diferente. As features aprendidas podem não generalizar bem para o novo domínio.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📏 Tamanho do Modelo</div>
+        <hr class="divider">
+        <p>Modelos grandes como ResNet-50, VGG-16 ou ViT podem ser pesados demais para deploy em dispositivos embarcados ou com restrições de memória.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚖️ Viés do Modelo</div>
+        <hr class="divider">
+        <p>O modelo pré-treinado pode carregar vieses do dataset fonte (ex.: ImageNet tem sub-representação de grupos demográficos). Importante avaliar equidade.</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Limitações</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 13 — DISCUSSÃO EM TURMA             -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag purple">Discussão</span>
+      <h2>Vamos pensar juntos?</h2>
+    </div>
+
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Clique em cada pergunta para revelar os pontos-chave da resposta.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+
+      <!-- Q1 -->
+      <div class="qa-wrap">
+        <button class="qa-btn" onclick="toggleQA(this)">
+          <span style="font-size:16px;">💬</span>
+          <span style="flex:1;text-align:left;">Vocês treinaram Feature Extraction no CIFAR-10 com 5.000 imagens para classificar objetos. Agora imagine aplicar Transfer Learning num sistema de triagem hospitalar: detectar lesões de pele malignas vs. benignas, com apenas 500 imagens disponíveis. Qual estratégia escolheriam e por quê? Quais cuidados extras esse contexto exige?</span>
+          <span class="qa-arrow">▶</span>
+        </button>
+        <div class="qa-ans" style="display:none;">
+          <strong style="color:var(--accent);">Feature Extraction pode ser a escolha mais segura com poucos dados.</strong><br>
+          <span style="color:var(--text-muted);">▸ Com 500 imagens, Fine-Tuning arriscaria overfitting.<br>
+          ▸ Classes desbalanceadas (malignas são minoria?) → usar F1 e AUC-ROC, não só acurácia.<br>
+          ▸ Qualquer resultado deve ser validado por especialista médico antes de uso real.</span>
+        </div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="qa-wrap">
+        <button class="qa-btn" onclick="toggleQA(this)" style="border-color:rgba(63,185,80,.35);">
+          <span style="font-size:16px;">💬</span>
+          <span style="flex:1;text-align:left;">Por que a ResNet-18 pré-treinada em ImageNet classifica CIFAR-10 bem, se ImageNet tem classes como "elefante" que não existem no CIFAR-10?</span>
+          <span class="qa-arrow">▶</span>
+        </button>
+        <div class="qa-ans" style="display:none;border-color:rgba(63,185,80,.35);">
+          <strong style="color:var(--green);">Ela transfere detectores visuais, não rótulos.</strong><br>
+          <span style="color:var(--text-muted);">▸ Camadas iniciais detectam bordas, texturas e formas, úteis para qualquer imagem.<br>
+          ▸ Só o fc é específico do domínio, e é exatamente ele que substituímos.</span>
+        </div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="qa-wrap">
+        <button class="qa-btn" onclick="toggleQA(this)" style="border-color:rgba(247,129,102,.35);">
+          <span style="font-size:16px;">💬</span>
+          <span style="flex:1;text-align:left;">Em quais situações seria mais vantajoso treinar do zero do que usar Transfer Learning?</span>
+          <span class="qa-arrow">▶</span>
+        </button>
+        <div class="qa-ans" style="display:none;border-color:rgba(247,129,102,.35);">
+          <strong style="color:var(--orange);">Quando o domínio de origem e o destino são muito diferentes.</strong><br>
+          <span style="color:var(--text-muted);">▸ Dados muito distantes de imagens naturais: radar SAR, microscopia eletrônica, espectrogramas.<br>
+          ▸ Dataset enorme (&gt;1M exemplos) — o ganho do pré-treinamento diminui.<br>
+          ▸ Quando os pesos pré-treinados causam transferência negativa.</span>
+        </div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="qa-wrap">
+        <button class="qa-btn" onclick="toggleQA(this)" style="border-color:rgba(188,140,255,.35);">
+          <span style="font-size:16px;">💬</span>
+          <span style="flex:1;text-align:left;">No contexto de Engenharia de Produção: que problemas industriais se beneficiariam de Transfer Learning?</span>
+          <span class="qa-arrow">▶</span>
+        </button>
+        <div class="qa-ans" style="display:none;border-color:rgba(188,140,255,.35);">
+          <strong style="color:var(--purple);">Modelos de previsão de Energia Solar, Eólica etc...</strong><br>
+          <span style="color:var(--text-muted);">▸ Qualquer aplicação onde se tem escassez de dados históricos reais.</span><br>
+          <strong style="color:var(--purple);">Qualquer inspeção visual que hoje depende de um especialista humano.</strong><br>
+          <span style="color:var(--text-muted);">▸ Defeitos em peças: rachaduras, bolhas, deformações.<br>
+          ▸ Controle de qualidade de PCBs e embalagens.<br>
+          ▸ Manutenção preditiva com câmeras térmicas.</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Discussão</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 14 — ROTEIRO DA PRÁTICA             -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+<div class="slide-header">
+      <span class="tag green">Prática</span>
+      <h2>Roteiro da 2ª hora — mão na massa 
+        <a href="https://github.com/rodrigohuber/aula-grad" target="_blank" style="color: var(--accent); text-decoration: none;">github.com/rodrigohuber/aula-grad</a>                        
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://github.com/rodrigohuber/aula-grad&choe=UTF-8" 
+             alt="QR Code de Link" 
+             style="width: 120px; height: 120px; vertical-align: middle; margin-left: 15px;">
+      </h2>
+    </div>
+
+    <ul class="list">
+      <li>
+        <span class="bullet">1</span>
+        <div>
+          <strong>Abrir o notebook</strong> — <code>Google Collab/01_feature_extraction_cifar10.ipynb</code>. Cada célula é comentada e explica o que está acontecendo.
+        </div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div>
+          <strong>Rodar o treinamento</strong> — Execute as células em ordem. O download do CIFAR-10 e do ResNet-18 acontece automaticamente (~170 MB).
+        </div>
+      </li>
+      <li>
+        <span class="bullet green">3</span>
+        <div>
+          <strong>Observar as métricas</strong> — Acompanhe a loss e a acurácia a cada época. Compare com o esperado (~72-78% em 5 épocas).
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange">4</span>
+        <div>
+          <strong>Experimentar</strong> — O que acontece se você mudar o learning rate? E se usar 10 épocas? E se descongelar as últimas 2 camadas?
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple">5</span>
+        <div>
+          <strong>Analisar erros</strong> — Gere a matriz de confusão. Quais classes o modelo confunde mais? Por que você acha que isso acontece?
+        </div>
+      </li>
+    </ul>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Roteiro da Prática</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 15 — REFERÊNCIAS                    -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag">Referências</span>
+      <h2>Leituras e recursos</h2>
+    </div>
+
+    <div class="card-grid cols-2">
+      <div class="card accent">
+        <div class="card-icon">📘</div>
+        <h3>Livro principal</h3>
+        <hr class="divider">
+        <p>Wang, Y., &amp; Chen, X. (2023). <em>Introduction to Transfer Learning: Algorithms and Practice</em>. Springer. — Base teórica desta aula.</p>
+      </div>
+      <div class="card green">
+        <div class="card-icon">🌐</div>
+        <h3>Tutorial PyTorch</h3>
+        <hr class="divider">
+        <p><em>Transfer Learning for Computer Vision Tutorial</em><br>pytorch.org/tutorials/beginner/transfer_learning_tutorial.html</p>
+      </div>
+      <div class="card purple">
+        <div class="card-icon">📄</div>
+        <h3>Artigo original ResNet</h3>
+        <hr class="divider">
+        <p>He, K. et al. (2016). <em>Deep Residual Learning for Image Recognition</em>. CVPR 2016.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h3>Slides da disciplina</h3>
+        <hr class="divider">
+        <p>Material do EAD.</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Referências</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 16 — RESULTADOS REAIS (GRÁFICO)     -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide" id="slide-chart">
+    <div class="slide-header">
+      <span class="tag green">Resultados</span>
+      <h2>O que esperar: curvas de treinamento</h2>
+    </div>
+
+    <p style="margin-bottom:20px;">
+      Resultados reais obtidos com ResNet-18 no subset balanceado do CIFAR-10 (5 épocas, CPU, n=5.000).
+      <a href="simulator.html" target="_blank" style="color:var(--accent); text-decoration:none; font-weight:600; margin-left:16px; border: 1px solid var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 13px;">🎮 Abrir Simulador Interativo →</a>
+    </p>
+
+    <div class="two-col">
+      <div style="position:relative; height:280px; width:550px;">
+        <canvas id="chartLoss"></canvas>
+      </div>
+      <div style="position:relative; height:280px; width:550px;">
+        <canvas id="chartAcc"></canvas>
+      </div>
+    </div>
+
+    <div class="card-grid cols-3" style="margin-top:20px;">
+      <div class="metric-box">
+        <div class="metric-val" style="color:var(--green)">74.5%</div>
+        <div class="metric-label">Transfer Learning Acc<br>(Val, 5 épocas)</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color:var(--orange)">37.8%</div>
+        <div class="metric-label">CNN treinada do zero<br>(N=5k subset)</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color:var(--purple)">+36.7%</div>
+        <div class="metric-label">Ganho de acurácia com<br>Transfer Learning</div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Resultados</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 17 — FINE-TUNING COMPARATIVO        -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag orange">Próximo nível</span>
+      <h2>Fine-Tuning: descongelando o backbone</h2>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <p style="color:var(--text); margin-bottom:16px;">E se, além da camada final, treinarmos as <strong>últimas camadas convolucionais</strong>?</p>
+
+        <pre style="font-size:12px;"><span class="cmt"># Fine-Tuning parcial: descongela layer4 + fc</span>
+model = models.<span class="fn">resnet18</span>(weights=models.<span class="cls">ResNet18_Weights</span>.IMAGENET1K_V1)
+
+<span class="cmt"># Congela tudo primeiro</span>
+<span class="kw">for</span> p <span class="kw">in</span> model.<span class="fn">parameters</span>():
+    p.requires_grad = <span class="kw">False</span>
+
+<span class="cmt"># Descongela somente as últimas camadas</span>
+<span class="kw">for</span> p <span class="kw">in</span> model.layer4.<span class="fn">parameters</span>():
+    p.requires_grad = <span class="kw">True</span>   <span class="cmt"># ← diferença!</span>
+
+model.fc = nn.<span class="cls">Linear</span>(model.fc.in_features, <span class="num">10</span>)
+
+<span class="cmt"># lr menor para camadas descongeladas</span>
+optimizer = optim.<span class="cls">SGD</span>([
+    {<span class="str">'params'</span>: model.layer4.<span class="fn">parameters</span>(), <span class="str">'lr'</span>: <span class="num">1e-4</span>},
+    {<span class="str">'params'</span>: model.fc.<span class="fn">parameters</span>(),     <span class="str">'lr'</span>: <span class="num">1e-3</span>},
+], momentum=<span class="num">0.9</span>)</pre>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="card accent">
+          <h3 style="color:var(--accent); margin-bottom:8px;">🧊 Feature Extraction</h3>
+          <table style="font-size:13px;">
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Params treináveis</td><td style="color:var(--text); padding-left:12px;"><strong>5.1K</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Acurácia</td><td style="color:var(--green); padding-left:12px;"><strong>74.5%</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Tempo (5 épocas)</td><td style="color:var(--text); padding-left:12px;"><strong>13.1 min</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Risco overfitting</td><td style="color:var(--green); padding-left:12px;"><strong>Baixo</strong></td></tr>
+          </table>
+        </div>
+        <div class="card orange">
+          <h3 style="color:var(--orange); margin-bottom:8px;">🔥 Fine-Tuning Completo</h3>
+          <table style="font-size:13px;">
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Params treináveis</td><td style="color:var(--text); padding-left:12px;"><strong>11.2M</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Acurácia</td><td style="color:var(--green); padding-left:12px;"><strong>87.9%</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Tempo (5 épocas)</td><td style="color:var(--orange); padding-left:12px;"><strong>26.4 min</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Risco overfitting</td><td style="color:var(--orange); padding-left:12px;"><strong>Médio-Alto</strong></td></tr>
+          </table>
+        </div>
+        <p style="font-size:11.5px; color:var(--text-muted); line-height:1.55; padding: 4px 2px;">
+          ⚠️ <strong style="color:var(--text-muted);">Nota:</strong> 87.9% foi obtido rodando o Fine-Tuning Completo por ~2h em CPU local.
+          No Colab com GPU e menos épocas, espere acurácia um pouco menor — o que importa é a <em>tendência</em>: Fine-Tuning &gt; Feature Extraction &gt; Scratch (treinar do zero).
+        </p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Fine-Tuning</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 18 — NOTEBOOK 2: FINE-TUNING        -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag purple">Prática 2</span>
+      <h2>Notebook 2 — Fine-Tuning em CIFAR-10</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">Notebook guiado para comparar <em>feature extraction</em> com <em>fine-tuning parcial</em>, analisando ganho de acurácia versus custo computacional.</p>
+
+    <ul class="list">
+      <li>
+        <span class="bullet">1</span>
+        <div>
+          <strong>Partir do modelo treinado</strong> — Carrega pesos da Prática 1 (ou re-inicializa com ImageNet). Garante ponto de comparação justo.
+        </div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div>
+          <strong>Descongelar layer4</strong> — Apenas retreina o último bloco residual do ResNet-18.
+        </div>
+      </li>
+      <li>
+        <span class="bullet green">3</span>
+        <div>
+          <strong>Comparar curvas</strong> — Plot lado a lado: loss e acurácia de Feature Extraction vs Fine-Tuning ao longo das épocas.
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange">4</span>
+        <div>
+          <strong>Matriz de confusão comparativa</strong> — Quais classes melhoram com Fine-Tuning? Por quê?
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple">5</span>
+        <div>
+          <strong>Discussão</strong> — Vale a pena o custo adicional? Em que cenários sim e em que cenários não?
+        </div>
+      </li>
+    </ul>
+
+    <div class="info-strip" style="margin-top:12px;">
+      📁 Arquivo: <code>Google Collabs/02_fine_tuning_cifar10.ipynb</code>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Prática 2 — Fine-Tuning</span>
+    </div>
+  </section>
+
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 19 — PESQUISA & OPORTUNIDADES       -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag green">Pesquisa & Oportunidades</span>
+      <h2>Quer trabalhar nessa área?</h2>
+    </div>
+
+    <div class="two-col" style="gap:28px; align-items:start;">
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="card accent">
+          <h3 style="color:var(--accent); margin-bottom:10px;">🔬 Minha Pesquisa</h3>
+          <p style="font-size:14px; line-height:1.65; margin-bottom:10px;">
+            <strong>Rodrigo Huber</strong> é doutorando do <strong>DEI PUC-Rio</strong>, bolsista
+            <strong>CAPES</strong> e <strong>FAPERJ Nota 10</strong>, e pesquisa
+            <strong>Transfer Learning aplicado à previsão de irradiação solar</strong>, 
+            usando modelos pré-treinados para estimar a energia disponível antes mesmo de ela ser gerada.
+          </p>
+          <p style="font-size:13px; color:var(--text-muted); line-height:1.6;">
+            As linhas de pesquisa atuais do grupo cobrem também previsão de <strong>geração</strong> e
+            <strong>demanda</strong> de energias renováveis: eólica, fotovoltaica, hidrelétrica e <strong>curtailment</strong>.
+          </p>
+        </div>
+
+        <div class="card" style="border-color:var(--green);">
+          <h3 style="color:var(--green); margin-bottom:10px;">📬 Como entrar em contato</h3>
+          <p style="font-size:14px; margin-bottom:8px;">
+            <strong>Email:</strong> <code style="color:var(--accent); font-size:13px;">rodrigo@aluno.puc-rio.br</code>
+          </p>
+          <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">
+            Ou procure pessoalmente após a aula: tanto eu, Rodrigo, quanto a professora estamos disponíveis para conversar.<br>
+
+		<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=mailto:rodrigo@aluno.puc-rio.br" 
+	    	 alt="QR Code de E-mail" 	
+ 		    style="width: 120px; height: 120px;">
+          </p>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <p style="color:var(--text-muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:2px;">Modalidades disponíveis</p>
+
+        <div class="card" style="border-color:var(--purple); padding:14px 18px;">
+          <h4 style="color:var(--purple); margin-bottom:6px;">🎓 Iniciação Científica (IC)</h4>
+          <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">
+            Pesquisa orientada com bolsa. Ideal para quem quer entrar no mundo acadêmico ainda na graduação.
+          </p>
+        </div>
+
+        <div class="card" style="border-color:var(--yellow); padding:14px 18px;">
+          <h4 style="color:var(--yellow); margin-bottom:6px;">⚡ Graduação 5+1</h4>
+          <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">
+            Ingresso antecipado no mestrado no 5º ano da graduação — um semestre de vantagem para quem tem interesse em seguir na pesquisa.
+          </p>
+        </div>
+
+        <div class="info-strip" style="margin-top:2px; font-size:13px;">
+          ⚡🔋 Temas: previsão solar · geração eólica · demanda renovável · curtailment · Transfer Learning para séries temporais
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Pesquisa & Oportunidades</span>
+    </div>
+  </section>
+
+</div><!-- /deck -->
+
+<script>
+  // ── Q&A Accordion ────────────────────────────────────────────────────────
+  function toggleQA(btn) {
+    const ans = btn.nextElementSibling;
+    const isOpen = btn.classList.contains('open');
+    document.querySelectorAll('.qa-btn.open').forEach(b => {
+      b.classList.remove('open');
+      b.nextElementSibling.style.display = 'none';
+    });
+    if (!isOpen) {
+      btn.classList.add('open');
+      ans.style.display = 'block';
+    }
+  }
+
+  // ── Chart data (ResNet-18 Benchmark on CIFAR-10) ────────────────────────
+  const epochs      = [1, 2, 3, 4, 5];
+  const lossData    = [1.1282, 0.6661, 0.6282, 0.5734, 0.5492];
+  const accData     = [0.7240, 0.7360, 0.7560, 0.7340, 0.7450];
+  const lossScratch = [2.0210, 1.6629, 1.5229, 1.3871, 1.1587];
+  const accScratch  = [0.3080, 0.3190, 0.3490, 0.4270, 0.3780];
+  const lossFT      = [1.4790, 0.5737, 0.3451, 0.2232, 0.1509];
+  const accFT       = [0.7480, 0.8410, 0.8640, 0.8720, 0.8790];
+
+  const chartDefaults = {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 900, easing: 'easeInOutQuart' },
+    plugins: {
+      legend: { labels: { color: '#8b949e', font: { family: 'Inter', size: 12 } } }
+    },
+    scales: {
+      x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+    }
+  };
+
+  let chartsCreated = false;
+  function initCharts() {
+    if (chartsCreated) return;
+    chartsCreated = true;
+    new Chart(document.getElementById('chartLoss'), {
+      type: 'line',
+      data: {
+        labels: epochs.map(e => 'Época ' + e),
+        datasets: [
+          { label: 'Feature Extraction', data: lossData,    borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.05)', tension: 0.4, fill: true },
+          { label: 'Treinamento do Zero', data: lossScratch, borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,.05)', tension: 0.4, fill: true },
+          { label: 'Fine-Tuning Completo', data: lossFT,      borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,.05)', tension: 0.4, fill: true }
+        ]
+      },
+      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, title: { display: true, text: 'Curva de Loss (treino)', color: '#e6edf3', font: { size: 14, family: 'Inter' } } } }
+    });
+    new Chart(document.getElementById('chartAcc'), {
+      type: 'line',
+      data: {
+        labels: epochs.map(e => 'Época ' + e),
+        datasets: [
+          { label: 'Feature Extraction', data: accData,     borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.05)', tension: 0.4, fill: true },
+          { label: 'Treinamento do Zero', data: accScratch,  borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,.05)', tension: 0.4, fill: true },
+          { label: 'Fine-Tuning Completo', data: accFT,       borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,.05)', tension: 0.4, fill: true }
+        ]
+      },
+      options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 0, max: 1 } },
+        plugins: { ...chartDefaults.plugins, title: { display: true, text: 'Acurácia de Validação', color: '#e6edf3', font: { size: 14, family: 'Inter' } } } }
+    });
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total  = slides.length;
+  let   cur    = 0;
+
+  const bar    = document.getElementById('progress-bar');
+  const num    = document.getElementById('slide-num');
+  const btnP   = document.getElementById('btn-prev');
+  const btnN   = document.getElementById('btn-next');
+
+  function show(idx) {
+    slides[cur].classList.remove('active');
+    cur = (idx + total) % total;
+    slides[cur].classList.add('active');
+    bar.style.width = ((cur + 1) / total * 100) + '%';
+    num.textContent  = (cur + 1) + ' / ' + total;
+    btnP.disabled    = cur === 0;
+    btnN.textContent = cur === total - 1 ? '✔ Fim' : 'Próximo →';
+    // Initialize charts when slide-chart becomes visible
+    if (slides[cur].id === 'slide-chart') setTimeout(initCharts, 50);
+  }
+
+  btnN.addEventListener('click', () => { if (cur < total - 1) show(cur + 1); });
+  btnP.addEventListener('click', () => { if (cur > 0) show(cur - 1); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') show(cur + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  show(cur - 1);
+  });
+
+  show(0);
+
+
+  // ── Fixed-Canvas Scaling (1280×720 → any screen) ──────────────────
+  (function() {
+    var deck = document.getElementById('deck');
+
+    function scaleDeck() {
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      var s = Math.min(vw / 1280, vh / 720);
+
+      deck.style.transform = 'scale(' + s + ')';
+      deck.style.left = Math.round((vw - 1280 * s) / 2) + 'px';
+      deck.style.top  = Math.round((vh - 720 * s) / 2) + 'px';
+    }
+
+    scaleDeck();
+    window.addEventListener('resize', scaleDeck);
+  })();
+
+</script>
+</body>
+</html>
