@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Transfer Learning — ENG4502</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --card:      #21262d;
+      --border:    #30363d;
+      --accent:    #58a6ff;
+      --green:     #3fb950;
+      --orange:    #f78166;
+      --purple:    #bc8cff;
+      --yellow:    #e3b341;
+      --text:      #e6edf3;
+      --text-muted:#8b949e;
+      --radius:    12px;
+      --font:      'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background-color: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 span.tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: rgba(88, 166, 255, 0.15);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+      color: var(--accent);
+      border-radius: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .puc-logo {
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.05em;
+      font-size: 18px;
+    }
+
+    .puc-logo span {
+      color: var(--yellow);
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      gap: 24px;
+      padding: 24px 40px;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ─── Control Panel ─── */
+    .control-panel {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      height: fit-content;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .btn-select-group {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .btn-select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-select:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .btn-select.active {
+      background: rgba(88, 166, 255, 0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+      box-shadow: 0 0 10px rgba(88, 166, 255, 0.15);
+    }
+
+    /* Sliders and Selectors */
+    select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    .epochs-slider-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .epoch-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 4px;
+      min-width: 32px;
+      text-align: center;
+    }
+
+    /* Simulation Buttons */
+    .btn-run {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .btn-run:hover {
+      opacity: 0.9;
+    }
+
+    .btn-run:disabled {
+      background: var(--card);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      cursor: not-allowed;
+    }
+
+    /* ─── Visualization Area ─── */
+    .visualization-area {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .grid-charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .chart-card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      min-height: 380px;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Explanation Card */
+    .explanation-card {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .explanation-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 4px; height: 100%;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+
+    .explanation-card.success::before { background: var(--green); }
+    .explanation-card.warning::before { background: var(--yellow); }
+    .explanation-card.danger::before  { background: var(--orange); }
+
+    .explanation-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .explanation-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    /* Status indicator during training simulation */
+    .sim-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(88,166,255,.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Footer styling */
+    footer {
+      text-align: center;
+      padding: 16px;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      background-color: var(--surface);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>PUC-Rio <span class="tag">ENG4502</span></h1>
+    <div class="puc-logo">Introdução à Ciência de Dados <span>ICD</span></div>
+  </header>
+
+  <main>
+    <!-- CONTROL PANEL -->
+    <div class="control-panel">
+      <h2 class="section-title">Parâmetros do Modelo</h2>
+
+      <!-- Strategy Selection -->
+      <div class="form-group">
+        <label>Estratégia de Transferência</label>
+        <div class="btn-select-group">
+          <button class="btn-select active" id="strat-scratch" onclick="setStrategy('scratch')">
+            <span>⬜</span> Treinamento do Zero (Scratch)
+          </button>
+          <button class="btn-select" id="strat-fe" onclick="setStrategy('fe')">
+            <span>❄️</span> Feature Extraction (Congelado)
+          </button>
+          <button class="btn-select" id="strat-ft" onclick="setStrategy('ft')">
+            <span>🔥</span> Fine-Tuning Completo
+          </button>
+        </div>
+      </div>
+
+      <!-- Dataset Size -->
+      <div class="form-group">
+        <label for="dataset-size">Tamanho do Dataset Alvo (CIFAR-10)</label>
+        <select id="dataset-size" onchange="updateParameters()">
+          <option value="500">Pequeno (500 imagens - 50/classe)</option>
+          <option value="5000" selected>Médio (5.000 imagens - 500/classe)</option>
+          <option value="50000">Grande (50.000 imagens - Completo)</option>
+        </select>
+      </div>
+
+      <!-- Learning Rate Selection -->
+      <div class="form-group">
+        <label for="lr">Taxa de Aprendizado (Learning Rate)</label>
+        <select id="lr" onchange="updateParameters()">
+          <option value="high">Alta (lr = 0.1)</option>
+          <option value="mid" selected>Média (lr = 0.01)</option>
+          <option value="low">Baixa (lr = 0.001)</option>
+        </select>
+      </div>
+
+      <!-- Epochs Slider -->
+      <div class="form-group">
+        <label for="epochs">Épocas de Treinamento</label>
+        <div class="epochs-slider-container">
+          <input type="range" id="epochs" min="1" max="10" value="5" oninput="updateEpochVal(this.value)">
+          <div class="epoch-val" id="epochs-display">5</div>
+        </div>
+      </div>
+
+      <!-- Run Simulation Button -->
+      <button class="btn-run" id="btn-run" onclick="runSimulation()">
+        🚀 Executar Simulação
+      </button>
+
+      <div class="sim-status" id="sim-status">
+        <div class="spinner" id="spinner"></div>
+        <span id="status-text">Pronto para simular.</span>
+      </div>
+    </div>
+
+    <!-- VISUALIZATION AREA -->
+    <div class="visualization-area">
+      <div class="grid-charts">
+        <!-- LOSS CHART -->
+        <div class="chart-card">
+          <canvas id="chartLoss"></canvas>
+        </div>
+
+        <!-- ACCURACY CHART -->
+        <div class="chart-card">
+          <canvas id="chartAcc"></canvas>
+        </div>
+      </div>
+
+      <!-- Pedagogy / Explanation Card -->
+      <div class="explanation-card" id="explanation-card">
+        <h3 class="explanation-title" id="explanation-title">
+          <span>ℹ️</span> Selecione os parâmetros e clique em Executar
+        </h3>
+        <p class="explanation-text" id="explanation-text">
+          Configure a estratégia de Transfer Learning, o tamanho do dataset e a taxa de aprendizado para analisar o comportamento do modelo em tempo real.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    ENG4502 - Introdução à Ciência de Dados · Departamento de Engenharia de Produção · PUC-Rio · 2026
+  </footer>
+
+  <script>
+    let activeStrategy = 'scratch';
+    let chartLoss, chartAcc;
+    let timerId = null;
+
+    function setStrategy(strat) {
+      document.querySelectorAll('.btn-select').forEach(b => b.classList.remove('active'));
+      if (strat === 'scratch') document.getElementById('strat-scratch').classList.add('active');
+      if (strat === 'fe') document.getElementById('strat-fe').classList.add('active');
+      if (strat === 'ft') document.getElementById('strat-ft').classList.add('active');
+      activeStrategy = strat;
+      updateParameters();
+    }
+
+    function updateEpochVal(val) {
+      document.getElementById('epochs-display').textContent = val;
+    }
+
+    function updateParameters() {
+      // Opcional: ajustar presets inteligentes dependendo das combinações
+    }
+
+    // ─── Mathematical Simulation Engine (Didactic representations) ───
+    function getSimulationCurves(strategy, datasetSize, lr, maxEpochs) {
+      let lossTrain = [];
+      let lossVal = [];
+      let accVal = [];
+
+      datasetSize = parseInt(datasetSize);
+
+      for (let epoch = 1; epoch <= maxEpochs; epoch++) {
+        let t = epoch / 10; // escala normalizada
+        let baseLossTrain, baseLossVal, baseAccVal;
+
+        if (strategy === 'scratch') {
+          // Treinamento do zero
+          if (datasetSize === 500) {
+            // Overfitting extremo
+            baseLossTrain = 2.2 * Math.exp(-1.5 * t);
+            baseLossVal = 2.2 - (1.1 * (1 - Math.exp(-0.8 * t))) + (epoch * 0.12); // sobe no final
+            baseAccVal = 0.10 + 0.15 * Math.sin(t * 1.5) + (Math.random() * 0.03);
+          } else if (datasetSize === 5000) {
+            // Caso real observado no laboratório
+            baseLossTrain = 2.1 * Math.exp(-0.8 * t);
+            baseLossVal = 2.02 - 0.9 * (1 - Math.exp(-0.7 * t));
+            if (epoch === 5) baseLossVal += 0.08; // instabilidade observada
+            accVal.push(epoch === 1 ? 0.308 : epoch === 2 ? 0.319 : epoch === 3 ? 0.349 : epoch === 4 ? 0.427 : 0.378);
+            lossTrain.push(epoch === 1 ? 2.0210 : epoch === 2 ? 1.6629 : epoch === 3 ? 1.5229 : epoch === 4 ? 1.3871 : 1.1587);
+            lossVal.push(epoch === 1 ? 2.05 : epoch === 2 ? 1.78 : epoch === 3 ? 1.62 : epoch === 4 ? 1.48 : 1.56);
+            continue;
+          } else {
+            // Dataset grande (50.000 completo)
+            baseLossTrain = 2.0 * Math.exp(-1.8 * t);
+            baseLossVal = 2.0 * Math.exp(-1.2 * t);
+            baseAccVal = 0.10 + 0.65 * (1 - Math.exp(-1.5 * t));
+          }
+        } 
+        else if (strategy === 'fe') {
+          // Feature Extraction
+          if (lr === 'high') {
+            // Divergência por gradiente muito alto
+            baseLossTrain = 1.2 * Math.exp(-0.3 * t) + (Math.random() * 0.15);
+            baseLossVal = 1.2 * Math.exp(-0.2 * t) + (Math.random() * 0.2);
+            baseAccVal = 0.55 + 0.12 * Math.sin(t * 2);
+          } else {
+            // Caso real (Feature Extraction padrão)
+            if (datasetSize === 5000) {
+              accVal.push(epoch === 1 ? 0.724 : epoch === 2 ? 0.736 : epoch === 3 ? 0.756 : epoch === 4 ? 0.734 : 0.745);
+              lossTrain.push(epoch === 1 ? 1.1282 : epoch === 2 ? 0.6661 : epoch === 3 ? 0.6282 : epoch === 4 ? 0.5734 : 0.5492);
+              lossVal.push(epoch === 1 ? 1.10 : epoch === 2 ? 0.71 : epoch === 3 ? 0.65 : epoch === 4 ? 0.68 : 0.66);
+              continue;
+            }
+            let scale = datasetSize === 500 ? 0.95 : 1.05;
+            baseLossTrain = 1.2 * Math.exp(-1.4 * t);
+            baseLossVal = 1.1 * Math.exp(-1.2 * t);
+            baseAccVal = 0.70 + 0.08 * (1 - Math.exp(-1.8 * t)) * scale;
+          }
+        } 
+        else if (strategy === 'ft') {
+          // Fine-Tuning
+          if (lr === 'high') {
+            // Catastrophic Forgetting (Taxa alta apaga pesos pré-treinados)
+            baseLossTrain = 1.8 * Math.exp(-0.8 * t);
+            baseLossVal = 1.8 * Math.exp(-0.4 * t) + (epoch * 0.08);
+            baseAccVal = 0.40 + 0.15 * (1 - Math.exp(-0.8 * t));
+          } else if (lr === 'mid') {
+            // Fine-tuning com lr médio (Ok, mas subótimo)
+            baseLossTrain = 1.5 * Math.exp(-1.6 * t);
+            baseLossVal = 1.4 * Math.exp(-1.4 * t);
+            baseAccVal = 0.73 + 0.11 * (1 - Math.exp(-2 * t));
+          } else {
+            // lr = baixo (Caso real Fine-Tuning PUCRio)
+            if (datasetSize === 5000) {
+              accVal.push(epoch === 1 ? 0.748 : epoch === 2 ? 0.841 : epoch === 3 ? 0.864 : epoch === 4 ? 0.872 : 0.879);
+              lossTrain.push(epoch === 1 ? 1.4790 : epoch === 2 ? 0.5737 : epoch === 3 ? 0.3451 : epoch === 4 ? 0.2232 : 0.1509);
+              lossVal.push(epoch === 1 ? 1.50 : epoch === 2 ? 0.68 : epoch === 3 ? 0.44 : epoch === 4 ? 0.32 : 0.24);
+              continue;
+            }
+            let scale = datasetSize === 500 ? 0.84 : 0.92;
+            baseLossTrain = 1.5 * Math.exp(-2.2 * t);
+            baseLossVal = 1.4 * Math.exp(-1.9 * t);
+            baseAccVal = 0.75 + 0.18 * (1 - Math.exp(-2.5 * t)) * (scale / 0.92);
+          }
+        }
+
+        lossTrain.push(parseFloat(baseLossTrain.toFixed(4)));
+        lossVal.push(parseFloat(baseLossVal.toFixed(4)));
+        accVal.push(parseFloat(baseAccVal.toFixed(4)));
+      }
+
+      return { lossTrain, lossVal, accVal };
+    }
+
+    // ─── Generate Explanations ───
+    function getExplanation(strategy, datasetSize, lr) {
+      datasetSize = parseInt(datasetSize);
+      let title, text, type;
+
+      if (strategy === 'scratch') {
+        if (datasetSize === 500) {
+          title = "⚠️ Alerta de Overfitting Crítico";
+          text = "Treinar uma ResNet-18 do zero com apenas 500 imagens é matematicamente inviável. A rede possui mais de 11 milhões de parâmetros livres para ajustar. Ela irá memorizar o ruído de treino muito rápido, gerando Loss de treino próxima a zero, enquanto a Acurácia de Validação ficará estagnada no patamar do chute aleatório (~10-15%).";
+          type = "danger";
+        } else if (datasetSize === 5000) {
+          title = "🔸 Treinamento do Zero Subótimo (Caso Real)";
+          text = "Com 5.000 imagens, a rede começa a aprender padrões simples, mas a quantidade de dados ainda é muito pequena para treinar todas as camadas convolucionais. Observamos instabilidade ao final das 5 épocas, com a acurácia de validação caindo para 37.8%, mostrando overfitting e ruído. O tempo de processamento é maior porque todos os 11M de gradientes precisam ser calculados.";
+          type = "warning";
+        } else {
+          title = "👍 Modelo Scratch Convergindo Lentamente";
+          text = "Com o dataset completo (50.000 imagens), o modelo consegue treinar todas as suas camadas de maneira sustentável. No entanto, observe que o progresso é lento em comparação com o Transfer Learning. A rede precisa aprender filtros simples (bordas, contrastes) a partir do zero nas primeiras épocas, consumindo muito mais tempo de processamento.";
+          type = "warning";
+        }
+      } 
+      else if (strategy === 'fe') {
+        if (lr === 'high') {
+          title = "⚠️ Taxa de Aprendizado Incompatível (lr=0.1)";
+          text = "Embora o backbone esteja congelado e apenas 5.130 pesos estejam sendo treinados, uma taxa de aprendizado excessivamente alta faz com que o classificador linear flutue em torno do mínimo local, causando oscilações acentuadas na curva de Loss de validação e limitando o ganho de acurácia.";
+          type = "warning";
+        } else {
+          title = "✅ Feature Extraction Robusto e Eficiente";
+          text = `Excelente escolha para restrição de tempo. Ao congelar o backbone, apenas 5.130 parâmetros são atualizados. Na época 1, a acurácia de validação já começa alta (${datasetSize === 5000 ? '72.4%' : 'alta'}), pois os filtros treinados no ImageNet detectam perfeitamente bordas e cores úteis para o CIFAR-10. O tempo de CPU é reduzido pela metade, e o modelo fica imune a overfitting grave.`;
+          type = "success";
+        }
+      } 
+      else if (strategy === 'ft') {
+        if (lr === 'high') {
+          title = "❌ Catastrophic Forgetting (Esquecimento Catastrófico)";
+          text = "Perigo Grave! Ao fazer o Fine-Tuning com taxa de aprendizado alta (0.1), os gradientes elevados apagam instantaneamente os filtros de baixo nível robustos aprendidos previamente no ImageNet. A rede perde seu conhecimento inicial e passa a se comportar como se estivesse sendo treinada do zero em um conjunto de dados minúsculo, resultando em colapso da acurácia.";
+          type = "danger";
+        } else if (lr === 'mid') {
+          title = "🔸 Fine-Tuning com Taxa Média (Subótimo)";
+          text = "A taxa de aprendizado média (0.01) ainda é um pouco agressiva demais para as camadas iniciais do backbone. Ela alcança bons resultados, mas compromete parcialmente a estabilidade da convergência convolucional.";
+          type = "warning";
+        } else {
+          title = "🏆 Configuração Campeã do Benchmark PUC-Rio";
+          text = `O Fine-Tuning com Taxa de Aprendizado Baixa (lr=0.001) permite que as camadas convolucionais refinem sutilmente seus filtros para o CIFAR-10, sem destruir as features genéricas de detecção de bordas e texturas do ImageNet. Esta estratégia alcançou a acurácia máxima de **87.9%** no laboratório, demonstrando a superioridade do ajuste fino especializado.`;
+          type = "success";
+        }
+      }
+
+      return { title, text, type };
+    }
+
+    // ─── Chart Initialization ───
+    function initChartsInstance() {
+      const ctxLoss = document.getElementById('chartLoss').getContext('2d');
+      const ctxAcc = document.getElementById('chartAcc').getContext('2d');
+
+      chartLoss = new Chart(ctxLoss, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            { label: 'Loss Treino', data: [], borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.05)', tension: 0.3, fill: true },
+            { label: 'Loss Validação', data: [], borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,0.05)', tension: 0.3, fill: true, borderDash: [5, 5] }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Curvas de Loss', color: '#e6edf3', font: { family: 'Inter', size: 14, weight: 'bold' } },
+            legend: { labels: { color: '#8b949e', font: { family: 'Inter' } } }
+          },
+          scales: {
+            x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+            y: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+          }
+        }
+      });
+
+      chartAcc = new Chart(ctxAcc, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            { label: 'Acurácia Validação (%)', data: [], borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,0.05)', tension: 0.3, fill: true }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: 'Acurácia de Validação (%)', color: '#e6edf3', font: { family: 'Inter', size: 14, weight: 'bold' } },
+            legend: { labels: { color: '#8b949e', font: { family: 'Inter' } } }
+          },
+          scales: {
+            x: { ticks: { color: '#8b949e' }, grid: { color: '#30363d' } },
+            y: { min: 0, max: 100, ticks: { color: '#8b949e' }, grid: { color: '#30363d' } }
+          }
+        }
+      });
+    }
+
+    // ─── Run Simulation (Epoca a Epoca) ───
+    function runSimulation() {
+      if (timerId !== null) clearInterval(timerId);
+
+      const datasetSize = document.getElementById('dataset-size').value;
+      const lr = document.getElementById('lr').value;
+      const epochs = parseInt(document.getElementById('epochs').value);
+
+      document.getElementById('btn-run').disabled = true;
+      document.getElementById('spinner').style.display = 'block';
+      document.getElementById('status-text').textContent = 'Treinando modelo...';
+
+      // Limpar gráficos
+      chartLoss.data.labels = [];
+      chartLoss.data.datasets[0].data = [];
+      chartLoss.data.datasets[1].data = [];
+      chartAcc.data.labels = [];
+      chartAcc.data.datasets[0].data = [];
+      chartLoss.update();
+      chartAcc.update();
+
+      const data = getSimulationCurves(activeStrategy, datasetSize, lr, epochs);
+      let step = 0;
+
+      // Reset Explanations card during training
+      const card = document.getElementById('explanation-card');
+      card.className = 'explanation-card';
+      document.getElementById('explanation-title').innerHTML = `<span>⏳</span> Simulação em Andamento...`;
+      document.getElementById('explanation-text').innerHTML = `Processando batches convolucionais no dispositivo CPU. Executando época por época...`;
+
+      timerId = setInterval(() => {
+        if (step < epochs) {
+          const epochLabel = `Época ${step + 1}`;
+          chartLoss.data.labels.push(epochLabel);
+          chartAcc.data.labels.push(epochLabel);
+
+          // Simular perdas decrescentes fictícias para perda de treino
+          let lossT = data.lossTrain[step];
+          let lossV = data.lossVal[step];
+          let accV = data.accVal[step] * 100;
+
+          chartLoss.data.datasets[0].data.push(lossT);
+          chartLoss.data.datasets[1].data.push(lossV);
+          chartAcc.data.datasets[0].data.push(accV);
+
+          chartLoss.update();
+          chartAcc.update();
+
+          document.getElementById('status-text').textContent = `Época ${step + 1}/${epochs} concluída...`;
+          step++;
+        } else {
+          clearInterval(timerId);
+          timerId = null;
+          document.getElementById('btn-run').disabled = false;
+          document.getElementById('spinner').style.display = 'none';
+          document.getElementById('status-text').textContent = 'Simulação concluída.';
+
+          // Apresentar explicações didáticas finais
+          const explanation = getExplanation(activeStrategy, datasetSize, lr);
+          card.className = `explanation-card ${explanation.type}`;
+          document.getElementById('explanation-title').innerHTML = `<span>💡</span> ${explanation.title}`;
+          document.getElementById('explanation-text').textContent = explanation.text;
+        }
+      }, 500); // 500ms por época simulada para ser dinâmico e visível
+    }
+
+    // Inicializar os gráficos ao carregar a página
+    window.onload = () => {
+      initChartsInstance();
+      setStrategy('scratch');
+    };
+  </script>
+</body>
+</html>
