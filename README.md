@@ -88,6 +88,24 @@ Reimplementação completa do Fine-Tuning da Prática 2, sem scaffolding. Você 
 
 ---
 
+## 📊 Referência: Benchmarks Completos
+
+Após completar todos os Labs, você pode abrir estes notebooks para ver modelos **totalmente treinados** com todos os resultados de fine-tuning já calculados e visualizados. Use-os para comparar seus resultados e entender como o desempenho escala com o tamanho do dataset.
+
+### Benchmark 5k — `Versão completa - benchmark_professor_5k_10ep.ipynb`
+
+Este notebook demonstra fine-tuning de ResNet-18 em um subconjunto reduzido de CIFAR-10 com 5.000 imagens ao longo de 10 épocas. A estratégia usa descongelamento parcial de camadas (`layer4` + `fc`) com taxas de aprendizado discriminativas (1e-4 para `layer4`, 1e-3 para `fc`) para balancear a preservação do conhecimento pré-treinado com adaptação específica da tarefa. Este dataset menor permite validar todo o pipeline rapidamente e entender como o desempenho do modelo escala com dados limitados. A acurácia esperada é aproximadamente **80–85%**, e o treinamento completo leva cerca de **30–40 minutos** em GPU T4 do Colab.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/Vers%C3%A3o%20completa%20-%20benchmark_professor_5k_10ep.ipynb)
+
+### Benchmark 50k — `Versão completa - benchmark_professor_50k_10ep.ipynb`
+
+Este notebook aplica a mesma estratégia de fine-tuning ao dataset completo de CIFAR-10 (todas as 50.000 imagens de treino) ao longo de 10 épocas. Ao treinar com o dataset completo, você observa como dados adicionais melhoram a generalização e vê o modelo convergir para seu melhor desempenho. A mesma configuração de descongelamento de camadas e taxas de aprendizado discriminativas é usada, mas o volume aumentado de dados resulta em aprendizado de features mais robusto e maior acurácia final (**aproximadamente 87–90%**). Este treinamento maior leva cerca de **80–100 minutos** em GPU T4. Ambos os benchmarks usam hiperparâmetros idênticos, permitindo comparação direta do impacto do tamanho do dataset no desempenho do modelo.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/Vers%C3%A3o%20completa%20-%20benchmark_professor_50k_10ep.ipynb)
+
+---
+
 ## 🎯 O que você vai aprender
 
 | Conceito | Onde aparece |
