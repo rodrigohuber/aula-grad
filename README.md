@@ -120,3 +120,21 @@ Este notebook aplica a mesma estratégia de fine-tuning ao dataset completo de C
 | Data Augmentation como regularização | Lab 3 |
 | Treinamento do zero vs. Transfer Learning | Lab 3 |
 | Transferência Negativa | Lab 3 |
+
+---
+
+## 📖 Leituras Recomendadas
+
+### Leitura principal — imagens
+
+**Yosinski, J., Clune, J., Bengio, Y. & Lipson, H. (2014).** *How transferable are features in deep neural networks?* Advances in Neural Information Processing Systems 27 (NeurIPS 2014).
+🔗 [arxiv.org/abs/1411.1792](https://arxiv.org/abs/1411.1792) (acesso livre)
+
+É a base conceitual dos Labs. O artigo mostra, com experimentos na ImageNet, que as primeiras camadas de uma rede convolucional aprendem features **gerais** (bordas, texturas), enquanto as últimas aprendem features **específicas** da tarefa original — e que a transferibilidade cai à medida que a tarefa de destino se afasta da tarefa de origem. Mostra também que inicializar com pesos transferidos e depois fazer fine-tuning melhora a generalização. É exatamente o porquê de congelarmos o backbone no **Lab 1** e descongelarmos apenas a `layer4` no **Lab 2**.
+
+### Leitura complementar — séries temporais
+
+**Mendes, R. H. M. M., Baião, F. A. & Souza, R. C. (2025).** *Exploring Transfer Learning Techniques for Solar Irradiation Forecast across Geographically Diverse Locations in Brazil Using Reanalysis Data.* Anais do LVII Simpósio Brasileiro de Pesquisa Operacional (SBPO 2025).
+🔗 DOI: [10.59254/sbpo-2025-212275](https://doi.org/10.59254/sbpo-2025-212275)
+
+Transfer Learning fora do mundo das imagens: um modelo de previsão de irradiação solar do dia seguinte (Random Forest), treinado com dados do Aeroporto do Galeão, é aplicado **sem fine-tuning** a outros 19 locais no Rio de Janeiro e no Brasil. O desempenho é muito bom, mas cai à medida que origem e destino divergem. O artigo compara cada local com um modelo treinado localmente (a *transfer loss*) e investiga métricas de distância para antecipar quando a transferência vai funcionar — a mesma pergunta por trás da **transferência negativa** discutida no **Lab 3**.
