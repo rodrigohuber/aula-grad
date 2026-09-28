@@ -13,7 +13,7 @@ Nesta sequência de notebooks você vai implementar as principais técnicas de *
 | Intro | Demonstração guiada | Feature Extraction com truque de cache | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/transfer_learning_colab.ipynb) |
 | Lab 1 | Prática 1 | Feature Extraction — você implementa | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/lab01_feature_extraction.ipynb) |
 | Lab 2 | Prática 2 | Fine-Tuning Parcial + Discriminative LRs | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/lab02_fine_tuning.ipynb) |
-| Lab 3 | Dever de Casa | Data Augmentation + Fine-Tuning autônomo | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/lab03_homework.ipynb) |
+| Lab 3 | Dever de Casa | Treino do zero vs. Fine-Tuning autônomo | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/lab03_homework.ipynb) |
 
 ---
 
@@ -37,7 +37,7 @@ Apresenta o conceito de Feature Extraction de forma visual e rápida. O diferenc
 - Estratégia: Feature Extraction com cache
 - Parâmetros treinados: 5.130 (apenas a camada linear final)
 - Tempo estimado: **< 1 minuto** na GPU T4
-- Acurácia esperada: ~75% (vs. ~38% treinando do zero)
+- Acurácia esperada: ~85% (vs. ~35–50% treinando a mesma rede do zero)
 
 ---
 
@@ -49,10 +49,10 @@ Cobre o mesmo conceito do notebook de introdução, mas desta vez você constró
 - **Exercício 2:** carregar a ResNet-18 pré-treinada, congelar o backbone e substituir a camada final.
 - **Exercício 3:** definir a loss (`CrossEntropyLoss`) e o otimizador (SGD passando apenas `model.fc.parameters()`).
 
-Cada bloco de código tem uma explicação detalhada do *por que* de cada decisão — por que 224×224, por que normalização ImageNet, o que `requires_grad=False` faz concretamente.
+Cada bloco de código tem uma explicação detalhada do *por que* de cada decisão — por que 224×224, por que normalização ImageNet, o que `requires_grad=False` faz concretamente. A função `freeze_bn` mantém o backbone **100% congelado**, inclusive as estatísticas da BatchNorm.
 
-- Tempo estimado: ~5 min na GPU T4; ~30–50 min na CPU
-- Acurácia esperada: ~70–75% após 5 épocas
+- Tempo estimado: ~1–2 min na GPU T4; ~30–50 min na CPU
+- Acurácia esperada: ~83–85% após 5 épocas
 
 ---
 
@@ -61,30 +61,30 @@ Cada bloco de código tem uma explicação detalhada do *por que* de cada decis�
 
 Avança além do Lab 1. A ResNet-18 é primeiro usada como linha de base (Feature Extraction, já implementada), e depois você desbloqueia partes do backbone:
 - **Exercício 1:** congelar tudo e descongelar apenas `layer4` (último bloco residual).
-- **Exercício 2:** criar um otimizador SGD com dois grupos de parâmetros, cada um com taxa de aprendizado diferente — `lr=1e-4` para `layer4` (refinamento suave dos pesos pré-treinados) e `lr=1e-3` para `fc` (aprendizado mais rápido, pesos aleatórios).
+- **Exercício 2:** criar um otimizador SGD com dois grupos de parâmetros, cada um com taxa de aprendizado diferente — `lr=1e-4` para `layer4` (refinamento suave dos pesos pré-treinados) e `lr=1e-2` para `fc` (aprendizado mais rápido, pesos aleatórios).
 
 Ao final, o notebook gera automaticamente gráficos comparativos de acurácia e loss, e matrizes de confusão lado a lado para identificar quais classes cada estratégia confunde mais.
 
-- Tempo estimado: ~10 min na GPU T4 (dois modelos); ~1h30 na CPU
-- Acurácia esperada: Fine-Tuning > Feature Extraction nas épocas finais
+- Tempo estimado: ~2–3 min na GPU T4 (dois modelos); ~1h30 na CPU
+- Acurácia esperada: Fine-Tuning ~85–87% contra ~83–85% da Feature Extraction
 
 ---
 
 ### Lab 3 — `lab03_homework.ipynb`
-**Dever de casa: Data Augmentation e Fine-Tuning autônomo.**
+**Dever de casa: treino do zero vs. Fine-Tuning autônomo.**
 
-Dois experimentos independentes para consolidar o aprendizado:
+Dois experimentos com a mesma ResNet-18, os mesmos 5.000 exemplos e as mesmas 5 épocas — a única diferença é o ponto de partida da rede:
 
-**Parte A — Scratch com Data Augmentation:**  
-Você define o pipeline de transformações com `RandomHorizontalFlip` e `RandomRotation(15)` aplicados apenas ao conjunto de treino. O modelo treinado do zero (sem pesos pré-treinados) usa essas transformações para tentar superar o benchmark de 37.8% visto em aula.
+**Parte A — Treino do zero (Scratch):**
+A ResNet-18 começa com pesos aleatórios (`weights=None`) e precisa aprender tudo a partir das 5.000 imagens. Resultado esperado: ~35–50% (a acurácia oscila bastante de uma época para outra).
 
-**Parte B — Fine-Tuning Parcial autônomo:**  
-Reimplementação completa do Fine-Tuning da Prática 2, sem scaffolding. Você carrega o modelo, congela, descongela `layer4`, substitui `fc` e configura o otimizador discriminativo — desta vez sem dicas de código.
+**Parte B — Fine-Tuning Parcial autônomo:**
+Reimplementação completa do Fine-Tuning da Prática 2, sem scaffolding. Você carrega o modelo pré-treinado, congela, descongela `layer4`, substitui `fc` e configura o otimizador discriminativo. Resultado esperado: ~85–87%.
 
-**Questões de discussão:** comparação dos resultados das duas partes, análise do tradeoff eficiência vs. acurácia, e uma questão sobre **Transferência Negativa** (o que acontece quando o domínio de origem e o de destino são muito diferentes).
+**Questões de discussão:** de onde vem a diferença de ~45 pontos entre as duas partes, o tradeoff eficiência vs. acurácia, e uma questão sobre **Transferência Negativa** (o que acontece quando o domínio de origem e o de destino são muito diferentes).
 
-- Tempo estimado: ~15 min na GPU T4; ~1h40 na CPU
-- Conceitos novos: Data Augmentation, treinamento do zero, análise comparativa
+- Tempo estimado: ~3 min na GPU T4; ~1h30 na CPU
+- Conceitos novos: treinamento do zero, análise comparativa, transferência negativa
 
 ---
 
@@ -92,17 +92,51 @@ Reimplementação completa do Fine-Tuning da Prática 2, sem scaffolding. Você 
 
 Após completar todos os Labs, você pode abrir estes notebooks para ver modelos **totalmente treinados** com todos os resultados de fine-tuning já calculados e visualizados. Use-os para comparar seus resultados e entender como o desempenho escala com o tamanho do dataset.
 
-### Benchmark 5k — `Versão completa - benchmark_professor_5k_10ep.ipynb`
+### ✅ Benchmark 5k (atual) — `Versão completa (atual) - benchmark_professor_5k_10ep.ipynb`
 
-Este notebook demonstra fine-tuning de ResNet-18 em um subconjunto reduzido de CIFAR-10 com 5.000 imagens ao longo de 10 épocas. A estratégia usa descongelamento parcial de camadas (`layer4` + `fc`) com taxas de aprendizado discriminativas (1e-4 para `layer4`, 1e-3 para `fc`) para balancear a preservação do conhecimento pré-treinado com adaptação específica da tarefa. Este dataset menor permite validar todo o pipeline rapidamente e entender como o desempenho do modelo escala com dados limitados. A acurácia esperada é aproximadamente **80–85%**, e o treinamento completo leva cerca de **30–40 minutos** em GPU T4 do Colab.
+Mesma configuração dos labs (backbone 100% congelado, inclusive a BatchNorm, na Feature Extraction e no Fine-Tuning Parcial; `lr=1e-2` na `fc`; sem Data Augmentation), agora com **10 épocas**. Quatro experimentos no subset de 5.000 imagens. Resultados salvos:
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/Vers%C3%A3o%20completa%20-%20benchmark_professor_5k_10ep.ipynb)
+| Estratégia | Params treináveis | Acurácia |
+|---|---|---|
+| Scratch (do zero) | 11,2M | 45,0% |
+| Feature Extraction | 5,1K | 84,8% |
+| Fine-Tuning Parcial (`layer4`) | 8,4M | **88,0%** |
+| Fine-Tuning Completo | 11,2M | 87,7% |
 
-### Benchmark 50k — `Versão completa - benchmark_professor_50k_10ep.ipynb`
+Repare: com poucos dados, abrir a rede inteira **não** supera o Fine-Tuning Parcial.
 
-Este notebook aplica a mesma estratégia de fine-tuning ao dataset completo de CIFAR-10 (todas as 50.000 imagens de treino) ao longo de 10 épocas. Ao treinar com o dataset completo, você observa como dados adicionais melhoram a generalização e vê o modelo convergir para seu melhor desempenho. A mesma configuração de descongelamento de camadas e taxas de aprendizado discriminativas é usada, mas o volume aumentado de dados resulta em aprendizado de features mais robusto e maior acurácia final (**aproximadamente 87–90%**). Este treinamento maior leva cerca de **80–100 minutos** em GPU T4. Ambos os benchmarks usam hiperparâmetros idênticos, permitindo comparação direta do impacto do tamanho do dataset no desempenho do modelo.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/Vers%C3%A3o%20completa%20%28atual%29%20-%20benchmark_professor_5k_10ep.ipynb)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/Vers%C3%A3o%20completa%20-%20benchmark_professor_50k_10ep.ipynb)
+### ✅ Benchmark 50k (atual) — `Versão completa (atual) - benchmark_professor_50k_10ep.ipynb`
+
+Os mesmos quatro experimentos com o **dataset completo** (50.000 imagens de treino, 10.000 de validação): mostra quanto cada estratégia ganha com 10× mais dados. Resultados salvos:
+
+| Estratégia | Params treináveis | Acurácia |
+|---|---|---|
+| Scratch (do zero) | 11,2M | 76,6% |
+| Feature Extraction | 5,1K | 86,9% |
+| Fine-Tuning Parcial (`layer4`) | 8,4M | 90,7% |
+| Fine-Tuning Completo | 11,2M | **94,4%** |
+
+Com dados suficientes, o Fine-Tuning Completo passa a valer a pena. Numa T4 do Colab o notebook inteiro leva cerca de 1h30 (estimativa).
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/Vers%C3%A3o%20completa%20%28atual%29%20-%20benchmark_professor_50k_10ep.ipynb)
+
+> Os resultados e tempos salvos nos dois notebooks foram gerados numa GPU local (NVIDIA RTX 5050), não numa T4: a acurácia é comparável, os tempos não.
+
+> ⚠️ **Os dois benchmarks abaixo estão DEPRECATED.** Foram feitos com a configuração original da aula (BatchNorm do backbone não congelada, `lr=1e-3` na `fc` do Fine-Tuning Parcial e um experimento de Data Augmentation que saiu do curso), por isso seus números **não batem com os labs**. Ficam aqui apenas como registro.
+
+### (DEPRECATED) Benchmark 5k — `Versão completa (DEPRECATED) - benchmark_professor_5k_10ep.ipynb`
+
+Este notebook demonstra fine-tuning de ResNet-18 em um subconjunto reduzido de CIFAR-10 com 5.000 imagens ao longo de 10 épocas. A estratégia usa descongelamento parcial de camadas (`layer4` + `fc`) com taxas de aprendizado discriminativas (1e-4 para `layer4`, 1e-3 para `fc`) para balancear a preservação do conhecimento pré-treinado com adaptação específica da tarefa. Este dataset menor permite validar todo o pipeline rapidamente e entender como o desempenho do modelo escala com dados limitados. Nos resultados salvos, o Fine-Tuning Parcial chega a **79,3%** e o Fine-Tuning Completo a **88,7%**; o notebook inteiro (5 experimentos) leva cerca de **13 minutos** em GPU T4 do Colab.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/Vers%C3%A3o%20completa%20%28DEPRECATED%29%20-%20benchmark_professor_5k_10ep.ipynb)
+
+### (DEPRECATED) Benchmark 50k — `Versão completa (DEPRECATED) - benchmark_professor_50k_10ep.ipynb`
+
+Este notebook aplica a mesma estratégia de fine-tuning ao dataset completo de CIFAR-10 (todas as 50.000 imagens de treino) ao longo de 10 épocas. Ao treinar com o dataset completo, você observa como dados adicionais melhoram a generalização e vê o modelo convergir para seu melhor desempenho. A mesma configuração de descongelamento de camadas e taxas de aprendizado discriminativas é usada, mas o volume aumentado de dados resulta em aprendizado de features mais robusto e maior acurácia final (nos resultados salvos, **86,5%** no Fine-Tuning Parcial e **94,6%** no Completo). Este treinamento maior leva cerca de **2 horas** em GPU T4. Ambos os benchmarks usam hiperparâmetros idênticos, permitindo comparação direta do impacto do tamanho do dataset no desempenho do modelo.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/rodrigohuber/aula-grad/blob/main/Vers%C3%A3o%20completa%20%28DEPRECATED%29%20-%20benchmark_professor_50k_10ep.ipynb)
 
 ---
 
@@ -115,9 +149,9 @@ Este notebook aplica a mesma estratégia de fine-tuning ao dataset completo de C
 | Normalização ImageNet e redimensionamento | Lab 1 |
 | Loop de treino PyTorch (forward, backward, step) | Lab 1 |
 | Fine-Tuning Parcial (descongelamento seletivo) | Lab 2 |
+| Congelamento completo do backbone (BatchNorm) | Lab 1 |
 | Discriminative Learning Rates | Lab 2 |
 | Matriz de confusão e análise de erros | Lab 2 |
-| Data Augmentation como regularização | Lab 3 |
 | Treinamento do zero vs. Transfer Learning | Lab 3 |
 | Transferência Negativa | Lab 3 |
 

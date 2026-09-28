@@ -96,7 +96,7 @@
       border-top: none; border-radius: 0 0 10px 10px;
       padding: 14px 20px; font-size: 15px; line-height: 1.75;
     }
-    #btn-next { left: 110px; }
+    #btn-next { left: 164px; }
 
     /* ─── Shared Layout ─── */
     .slide-header {
@@ -155,6 +155,14 @@
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 13px; flex-shrink: 0;
     }
+    .list.compact { gap: 10px; }
+    .list.compact li { padding: 11px 18px; font-size: 15.5px; line-height: 1.5; }
+    .card-grid.refs { gap: 14px; }
+    .card-grid.refs .card { padding: 14px 20px; }
+    .card-grid.refs .card-icon { font-size: 20px; margin-bottom: 4px; }
+    .card-grid.refs h3 { font-size: 17px; margin-bottom: 2px; }
+    .card-grid.refs hr.divider { margin: 8px 0; }
+    .card-grid.refs p { font-size: 13px; line-height: 1.55; }
     .list li .bullet.green  { background: rgba(63,185,80,.15);  color: var(--green);  }
     .list li .bullet.orange { background: rgba(247,129,102,.15); color: var(--orange); }
     .list li .bullet.purple { background: rgba(188,140,255,.15); color: var(--purple); }
@@ -190,6 +198,7 @@
     }
     tbody tr:last-child td { border-bottom: none; }
     tbody tr:hover td { background: rgba(88,166,255,.04); }
+    table.tight td { padding-top: 4px !important; padding-bottom: 4px !important; }
     .good { color: var(--green); font-weight: 600; }
     .bad  { color: var(--orange); font-weight: 600; }
 
@@ -280,7 +289,7 @@
     .info-strip {
       background: rgba(227,179,65,.08); border: 1px solid rgba(227,179,65,.3);
       border-radius: var(--radius); padding: 14px 22px;
-      display: flex; align-items: center; gap: 12px;
+      display: block; line-height: 1.6;
       font-size: 14px; color: var(--yellow);
     }
 
@@ -333,7 +342,7 @@
 
     <div class="slide-footer">
       <span>M.Sc. Rodrigo Huber Mendes</span>
-      <span>2025/2</span>
+      <span>2026/2</span>
     </div>
   </section>
 
@@ -451,6 +460,11 @@
       <div class="source">— Wang &amp; Chen (2023), <em>Introduction to Transfer Learning: Algorithms and Practice</em>, §1.2</div>
     </div>
 
+    <div class="info-strip" style="margin-top:4px; color:var(--text); background:rgba(88,166,255,.06); border-color:rgba(88,166,255,.3);">
+      📐 <strong>Formalmente</strong> (Pan &amp; Yang, 2010): um <strong>domínio</strong> 𝒟 = {𝒳, P(X)} é um espaço de atributos com sua distribuição; uma <strong>tarefa</strong> 𝒯 = {𝒴, f(·)} é um espaço de rótulos com a função a aprender.
+      Transfer Learning usa 𝒟<sub>S</sub> e 𝒯<sub>S</sub> para aprender melhor f<sub>T</sub> no alvo, quando 𝒟<sub>S</sub> ≠ 𝒟<sub>T</sub> ou 𝒯<sub>S</sub> ≠ 𝒯<sub>T</sub>.
+    </div>
+
     <div class="card-grid cols-2" style="margin-top:24px;">
       <div class="card">
         <h3 style="color:var(--accent);">🎯 Tarefa Fonte (Source)</h3>
@@ -460,7 +474,7 @@
       <div class="card">
         <h3 style="color:var(--green);">🎯 Tarefa Alvo (Target)</h3>
         <hr class="divider">
-        <p>Problema que queremos resolver com <strong>poucos dados</strong>. Ex.: classificar imagens de CIFAR-10 (10 classes, 50k imagens).</p>
+        <p>Problema que queremos resolver com <strong>poucos dados</strong>. Ex.: classificar imagens do CIFAR-10 (10 classes); na aula, um subconjunto de só 5.000 imagens.</p>
       </div>
     </div>
 
@@ -546,7 +560,7 @@
     </div>
 
     <div class="info-strip">
-      📌 <strong>Na prática de hoje</strong> usaremos <strong>Feature Extraction</strong> — mais simples, mais rápido, e já demonstra ganhos expressivos de acurácia.
+      📌 <strong>Na prática de hoje</strong> começamos com <strong>Feature Extraction</strong> (Prática 1), mais simples e mais rápida, e depois comparamos com <strong>Fine-Tuning Parcial</strong> (Prática 2).
     </div>
 
     <div class="slide-footer">
@@ -647,7 +661,7 @@
           <li>
             <span class="bullet purple">🔒</span>
             <div>
-              <strong>Congelamento:</strong> em todos os parâmetros (Feature Extraction da arquitetura da rede e seus pesos) apenas a nova camada <code>fc</code> é treinada ou Fine Tunning Parcial/Total (Apenas alguma camadas são re-treinadas).
+              <strong>Congelamento:</strong> na <em>Feature Extraction</em>, todos os pesos pré-treinados ficam congelados e só a nova <code>fc</code> é treinada; no <em>Fine-Tuning</em> (parcial ou completo), algumas ou todas as camadas também são re-treinadas.
             </div>
           </li>
         </ul>
@@ -662,18 +676,16 @@
           <div class="metric-label">Parâmetros treináveis (apenas fc)<br>= 512 × 10 + 10 bias</div>
         </div>
         <div class="metric-box" style="border-color:rgba(247,129,102,.4);">
-          <div class="metric-val" style="color:var(--orange)">~8min</div>
-          <div class="metric-label">Tempo estimado em CPU (5 épocas)</div>
+          <div class="metric-val" style="color:var(--orange)">~1 min</div>
+          <div class="metric-label">Tempo na GPU T4 do Colab (5 épocas)</div>
         </div>
       </div>
     </div>
-<a href="https://i.ytimg.com/vi/woEs7UCaITo/maxresdefault.jpg" target="_blank" style="color: var(--orange); text-decoration: none; font-weight: 500;">
-  Diagrama de arquitetura da ResNet\PyTorch ↗
-</a>
-
-<a href="https://www.kaggle.com/code/iamtapendu/introduction-to-resnet-18" target="_blank" style="color: var(--orange); text-decoration: none; font-weight: 500;">
-  Introduction to resnet-18 Kaggle↗
-</a>
+    <div style="margin-top:10px; font-size:14px;">
+      <a href="https://i.ytimg.com/vi/woEs7UCaITo/maxresdefault.jpg" target="_blank" style="color: var(--orange); text-decoration: none; font-weight: 500;">Diagrama de arquitetura da ResNet ↗</a>
+      <span style="color:var(--text-muted);">&nbsp;·&nbsp;</span>
+      <a href="https://www.kaggle.com/code/iamtapendu/introduction-to-resnet-18" target="_blank" style="color: var(--orange); text-decoration: none; font-weight: 500;">Introduction to ResNet-18 (Kaggle) ↗</a>
+    </div>
 
 
     <div class="slide-footer">
@@ -743,7 +755,7 @@
   <!-- ══════════════════════════════════════════════════════ -->
   <!-- SLIDE 9B — RESNET-18: ARQUITETURA + ESTRATÉGIAS       -->
   <!-- ══════════════════════════════════════════════════════ -->
-  <section class="slide" style="padding:36px 60px;">
+  <section class="slide" style="padding:36px 60px 60px;">
     <div class="slide-header">
       <span class="tag orange">Arquitetura</span>
       <h2>ResNet-18: O que congela e o que treina?</h2>
@@ -903,7 +915,7 @@
           <div style="flex:0.8;background:rgba(88,166,255,.15);border:1.5px solid var(--accent);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--accent);font-weight:700;">🔥 fc</div>
         </div>
         <div style="width:210px;flex-shrink:0;">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">5.1K params</span><span style="color:var(--green);font-weight:700;">74.5% · 13min</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">5.1K params</span><span style="color:var(--green);font-weight:700;">~84% · ~1 min</span></div>
           <div style="background:var(--border);height:9px;border-radius:4px;overflow:hidden;"><div style="width:2%;background:var(--accent);height:100%;border-radius:4px;"></div></div>
         </div>
       </div>
@@ -912,7 +924,7 @@
       <div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 18px;">
         <div style="width:190px;flex-shrink:0;">
           <div style="font-size:14px;font-weight:700;color:var(--purple);">⚡ Fine-Tuning Parcial</div>
-          <div style="font-size:12px;color:var(--text-muted);">Lab 2 · Homework</div>
+          <div style="font-size:12px;color:var(--text-muted);">Lab 2 · Lab 3 (casa)</div>
         </div>
         <div style="display:flex;gap:5px;flex:1;align-items:center;">
           <div style="flex:0.7;background:#161b22;border:1px solid #30363d;border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:#484f58;">🔒 conv1</div>
@@ -928,8 +940,8 @@
           <div style="flex:0.8;background:rgba(188,140,255,.15);border:1.5px solid var(--purple);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--purple);font-weight:700;">🔥 fc</div>
         </div>
         <div style="width:210px;flex-shrink:0;">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">2.6M params</span><span style="color:var(--green);font-weight:700;">75.4% · 15min</span></div>
-          <div style="background:var(--border);height:9px;border-radius:4px;overflow:hidden;"><div style="width:23%;background:var(--purple);height:100%;border-radius:4px;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">8.4M params</span><span style="color:var(--green);font-weight:700;">~86% · ~1 min</span></div>
+          <div style="background:var(--border);height:9px;border-radius:4px;overflow:hidden;"><div style="width:75%;background:var(--purple);height:100%;border-radius:4px;"></div></div>
         </div>
       </div>
 
@@ -937,7 +949,7 @@
       <div style="display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid rgba(247,129,102,.3);border-radius:10px;padding:13px 18px;">
         <div style="width:190px;flex-shrink:0;">
           <div style="font-size:14px;font-weight:700;color:var(--orange);">🔥 Fine-Tuning Completo</div>
-          <div style="font-size:12px;color:var(--text-muted);">Referência · ~2h CPU</div>
+          <div style="font-size:12px;color:var(--text-muted);">Referência · benchmark</div>
         </div>
         <div style="display:flex;gap:5px;flex:1;align-items:center;">
           <div style="flex:0.7;background:rgba(247,129,102,.15);border:1.5px solid var(--orange);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--orange);font-weight:700;">🔥 conv1</div>
@@ -953,7 +965,7 @@
           <div style="flex:0.8;background:rgba(247,129,102,.15);border:1.5px solid var(--orange);border-radius:6px;padding:7px 8px;text-align:center;font-size:12px;color:var(--orange);font-weight:700;">🔥 fc</div>
         </div>
         <div style="width:210px;flex-shrink:0;">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">11.2M params</span><span style="color:var(--green);font-weight:700;">87.9% · 26min</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--text-muted);">11.2M params</span><span style="color:var(--green);font-weight:700;">~88% · ~1,5 min</span></div>
           <div style="background:var(--border);height:9px;border-radius:4px;overflow:hidden;"><div style="width:100%;background:var(--orange);height:100%;border-radius:4px;"></div></div>
         </div>
       </div>
@@ -1023,28 +1035,26 @@
       <h2>Implementação em PyTorch</h2>
     </div>
 
-    <pre><span class="kw">import</span> torch, torch.nn <span class="kw">as</span> nn, torch.optim <span class="kw">as</span> optim
+    <pre style="font-size:12px; line-height:1.5; padding:14px 22px;"><span class="kw">import</span> torch, torch.nn <span class="kw">as</span> nn, torch.optim <span class="kw">as</span> optim
 <span class="kw">from</span> torchvision <span class="kw">import</span> datasets, transforms, models
 
 <span class="cmt"># ── 1. Transformações ────────────────────────────────────────</span>
 transform = transforms.<span class="fn">Compose</span>([
     transforms.<span class="cls">Resize</span>(<span class="num">224</span>),                      <span class="cmt"># ResNet espera 224×224</span>
     transforms.<span class="cls">ToTensor</span>(),
-    transforms.<span class="cls">Normalize</span>((<span class="num">0.5</span>,<span class="num">0.5</span>,<span class="num">0.5</span>), (<span class="num">0.5</span>,<span class="num">0.5</span>,<span class="num">0.5</span>))
+    transforms.<span class="cls">Normalize</span>([<span class="num">0.485</span>, <span class="num">0.456</span>, <span class="num">0.406</span>],   <span class="cmt"># média e desvio</span>
+                         [<span class="num">0.229</span>, <span class="num">0.224</span>, <span class="num">0.225</span>]),  <span class="cmt"># do ImageNet</span>
 ])
-
 <span class="cmt"># ── 2. Dataset e DataLoader ──────────────────────────────────</span>
 train_ds = datasets.<span class="cls">CIFAR10</span>(<span class="str">'data'</span>, train=<span class="kw">True</span>,  download=<span class="kw">True</span>, transform=transform)
 val_ds   = datasets.<span class="cls">CIFAR10</span>(<span class="str">'data'</span>, train=<span class="kw">False</span>, download=<span class="kw">True</span>, transform=transform)
-train_loader = torch.utils.data.<span class="fn">DataLoader</span>(train_ds, batch_size=<span class="num">128</span>, shuffle=<span class="kw">True</span>)
-val_loader   = torch.utils.data.<span class="fn">DataLoader</span>(val_ds,   batch_size=<span class="num">128</span>)
-
+train_loader = torch.utils.data.<span class="fn">DataLoader</span>(train_ds, batch_size=<span class="num">64</span>, shuffle=<span class="kw">True</span>)
+val_loader   = torch.utils.data.<span class="fn">DataLoader</span>(val_ds,   batch_size=<span class="num">64</span>)
 <span class="cmt"># ── 3. Modelo pré-treinado + adaptação ──────────────────────</span>
 model = models.<span class="fn">resnet18</span>(weights=models.<span class="cls">ResNet18_Weights</span>.IMAGENET1K_V1)
 <span class="kw">for</span> p <span class="kw">in</span> model.<span class="fn">parameters</span>():
     p.requires_grad = <span class="kw">False</span>            <span class="cmt"># ← congela backbone (feature extraction)</span>
 model.fc = nn.<span class="cls">Linear</span>(model.fc.in_features, <span class="num">10</span>)  <span class="cmt"># ← 10 classes CIFAR-10</span>
-
 <span class="cmt"># ── 4. Treinamento ───────────────────────────────────────────</span>
 optimizer = optim.<span class="cls">SGD</span>(model.fc.<span class="fn">parameters</span>(), lr=<span class="num">0.01</span>, momentum=<span class="num">0.9</span>)
 criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
@@ -1089,7 +1099,7 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
     </div>
 
     <div class="info-strip" style="margin-top:20px;">
-      📌 <strong>Resultado esperado:</strong> Feature Extraction com ResNet-18 em CIFAR-10 atinge <strong>~72-78% de acurácia em 5 épocas</strong>. Compare isso com treinar uma CNN do zero: ~55-60% nas mesmas condições.
+      📌 <strong>Resultado esperado:</strong> Feature Extraction com ResNet-18 em CIFAR-10 atinge <strong>~83–85% de acurácia em 5 épocas</strong>. Treinar a mesma ResNet-18 do zero, nas mesmas condições, fica em ~35–50%.
     </div>
 
     <div class="slide-footer">
@@ -1229,27 +1239,27 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
         <a href="https://github.com/rodrigohuber/aula-grad" target="_blank" style="color: var(--accent); text-decoration: none;">github.com/rodrigohuber/aula-grad</a>                        
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://github.com/rodrigohuber/aula-grad&choe=UTF-8" 
              alt="QR Code de Link" 
-             style="width: 120px; height: 120px; vertical-align: middle; margin-left: 15px;">
+             style="width: 84px; height: 84px; vertical-align: middle; margin-left: 15px;">
       </h2>
     </div>
 
-    <ul class="list">
+    <ul class="list compact">
       <li>
         <span class="bullet">1</span>
         <div>
-          <strong>Abrir o notebook</strong> — <code>Google Collab/01_feature_extraction_cifar10.ipynb</code>. Cada célula é comentada e explica o que está acontecendo.
+          <strong>Abrir no Colab</strong> — pelo botão <em>Open in Colab</em> do README: primeiro <code>transfer_learning_colab.ipynb</code> (demonstração), depois <code>lab01_feature_extraction.ipynb</code>.
         </div>
       </li>
       <li>
         <span class="bullet">2</span>
         <div>
-          <strong>Rodar o treinamento</strong> — Execute as células em ordem. O download do CIFAR-10 e do ResNet-18 acontece automaticamente (~170 MB).
+          <strong>Ativar a GPU e rodar</strong> — Ambiente de execução → GPU (T4); execute as células em ordem. CIFAR-10 (~170 MB) e ResNet-18 (~45 MB) baixam sozinhos.
         </div>
       </li>
       <li>
         <span class="bullet green">3</span>
         <div>
-          <strong>Observar as métricas</strong> — Acompanhe a loss e a acurácia a cada época. Compare com o esperado (~72-78% em 5 épocas).
+          <strong>Observar as métricas</strong> — Acompanhe a loss e a acurácia a cada época. Compare com o esperado (~83–85% em 5 épocas).
         </div>
       </li>
       <li>
@@ -1261,7 +1271,7 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
       <li>
         <span class="bullet purple">5</span>
         <div>
-          <strong>Analisar erros</strong> — Gere a matriz de confusão. Quais classes o modelo confunde mais? Por que você acha que isso acontece?
+          <strong>Analisar erros</strong> — Quais classes o modelo confunde mais, e por quê? (A matriz de confusão aparece na Prática 2.)
         </div>
       </li>
     </ul>
@@ -1281,12 +1291,12 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
       <h2>Leituras e recursos</h2>
     </div>
 
-    <div class="card-grid cols-2">
+    <div class="card-grid cols-3 refs">
       <div class="card accent">
         <div class="card-icon">📘</div>
         <h3>Livro principal</h3>
         <hr class="divider">
-        <p>Wang, Y., &amp; Chen, X. (2023). <em>Introduction to Transfer Learning: Algorithms and Practice</em>. Springer. — Base teórica desta aula.</p>
+        <p>Wang, J., &amp; Chen, Y. (2023). <em>Introduction to Transfer Learning: Algorithms and Practice</em>. Springer. — Base teórica desta aula.</p>
       </div>
       <div class="card green">
         <div class="card-icon">🌐</div>
@@ -1299,6 +1309,18 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
         <h3>Artigo original ResNet</h3>
         <hr class="divider">
         <p>He, K. et al. (2016). <em>Deep Residual Learning for Image Recognition</em>. CVPR 2016.</p>
+      </div>
+      <div class="card accent">
+        <div class="card-icon">🧠</div>
+        <h3>Features transferíveis</h3>
+        <hr class="divider">
+        <p>Yosinski, J. et al. (2014). <em>How transferable are features in deep neural networks?</em> NeurIPS 2014. — Por que congelamos as camadas iniciais.</p>
+      </div>
+      <div class="card green">
+        <div class="card-icon">📐</div>
+        <h3>Definição formal</h3>
+        <hr class="divider">
+        <p>Pan, S. J., &amp; Yang, Q. (2010). <em>A Survey on Transfer Learning</em>. IEEE TKDE 22(10). — Domínio 𝒟 e tarefa 𝒯.</p>
       </div>
       <div class="card">
         <div class="card-icon">📊</div>
@@ -1324,8 +1346,8 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
     </div>
 
     <p style="margin-bottom:20px;">
-      Resultados reais obtidos com ResNet-18 no subset balanceado do CIFAR-10 (5 épocas, CPU, n=5.000).
-      <a href="simulator.html" target="_blank" style="color:var(--accent); text-decoration:none; font-weight:600; margin-left:16px; border: 1px solid var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 13px;">🎮 Abrir Simulador Interativo →</a>
+      Resultados reais dos notebooks da aula: subset balanceado do CIFAR-10 (5.000 imagens), 5 épocas.
+      <a href="SLIDES_AULA-simulator.html" target="_blank" style="color:var(--accent); text-decoration:none; font-weight:600; margin-left:16px; border: 1px solid var(--accent); padding: 4px 10px; border-radius: 20px; font-size: 13px;">🎮 Abrir Simulador Interativo →</a>
     </p>
 
     <div class="two-col">
@@ -1339,15 +1361,15 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
 
     <div class="card-grid cols-3" style="margin-top:20px;">
       <div class="metric-box">
-        <div class="metric-val" style="color:var(--green)">74.5%</div>
-        <div class="metric-label">Transfer Learning Acc<br>(Val, 5 épocas)</div>
+        <div class="metric-val" style="color:var(--green)">~84%</div>
+        <div class="metric-label">Feature Extraction<br>(validação, 5 épocas)</div>
       </div>
       <div class="metric-box">
-        <div class="metric-val" style="color:var(--orange)">37.8%</div>
-        <div class="metric-label">CNN treinada do zero<br>(N=5k subset)</div>
+        <div class="metric-val" style="color:var(--orange)">~40%</div>
+        <div class="metric-label">Mesma ResNet-18 treinada do zero<br>(varia entre ~35 e 50%)</div>
       </div>
       <div class="metric-box">
-        <div class="metric-val" style="color:var(--purple)">+36.7%</div>
+        <div class="metric-val" style="color:var(--purple)">+44 p.p.</div>
         <div class="metric-label">Ganho de acurácia com<br>Transfer Learning</div>
       </div>
     </div>
@@ -1371,7 +1393,7 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
       <div>
         <p style="color:var(--text); margin-bottom:16px;">E se, além da camada final, treinarmos as <strong>últimas camadas convolucionais</strong>?</p>
 
-        <pre style="font-size:12px;"><span class="cmt"># Fine-Tuning parcial: descongela layer4 + fc</span>
+        <pre style="font-size:12px; line-height:1.5; padding:16px 22px;"><span class="cmt"># Fine-Tuning parcial: descongela layer4 + fc</span>
 model = models.<span class="fn">resnet18</span>(weights=models.<span class="cls">ResNet18_Weights</span>.IMAGENET1K_V1)
 
 <span class="cmt"># Congela tudo primeiro</span>
@@ -1387,32 +1409,31 @@ model.fc = nn.<span class="cls">Linear</span>(model.fc.in_features, <span class=
 <span class="cmt"># lr menor para camadas descongeladas</span>
 optimizer = optim.<span class="cls">SGD</span>([
     {<span class="str">'params'</span>: model.layer4.<span class="fn">parameters</span>(), <span class="str">'lr'</span>: <span class="num">1e-4</span>},
-    {<span class="str">'params'</span>: model.fc.<span class="fn">parameters</span>(),     <span class="str">'lr'</span>: <span class="num">1e-3</span>},
+    {<span class="str">'params'</span>: model.fc.<span class="fn">parameters</span>(),     <span class="str">'lr'</span>: <span class="num">1e-2</span>},
 ], momentum=<span class="num">0.9</span>)</pre>
       </div>
 
-      <div style="display:flex; flex-direction:column; gap:14px;">
-        <div class="card accent">
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="card accent" style="padding:16px 24px;">
           <h3 style="color:var(--accent); margin-bottom:8px;">🧊 Feature Extraction</h3>
-          <table style="font-size:13px;">
-            <tr><td style="color:var(--text-muted); padding:4px 0;">Params treináveis</td><td style="color:var(--text); padding-left:12px;"><strong>5.1K</strong></td></tr>
-            <tr><td style="color:var(--text-muted); padding:4px 0;">Acurácia</td><td style="color:var(--green); padding-left:12px;"><strong>74.5%</strong></td></tr>
-            <tr><td style="color:var(--text-muted); padding:4px 0;">Tempo (5 épocas)</td><td style="color:var(--text); padding-left:12px;"><strong>13.1 min</strong></td></tr>
-            <tr><td style="color:var(--text-muted); padding:4px 0;">Risco overfitting</td><td style="color:var(--green); padding-left:12px;"><strong>Baixo</strong></td></tr>
+          <table class="tight" style="font-size:13px;">
+            <tr><td style="color:var(--text-muted); padding:2px 0;">Params treináveis</td><td style="color:var(--text); padding-left:12px;"><strong>5.1K</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:2px 0;">Acurácia</td><td style="color:var(--green); padding-left:12px;"><strong>~84%</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:2px 0;">Tempo (5 épocas)</td><td style="color:var(--text); padding-left:12px;"><strong>~1 min (T4)</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:2px 0;">Risco overfitting</td><td style="color:var(--green); padding-left:12px;"><strong>Baixo</strong></td></tr>
           </table>
         </div>
-        <div class="card orange">
-          <h3 style="color:var(--orange); margin-bottom:8px;">🔥 Fine-Tuning Completo</h3>
-          <table style="font-size:13px;">
-            <tr><td style="color:var(--text-muted); padding:4px 0;">Params treináveis</td><td style="color:var(--text); padding-left:12px;"><strong>11.2M</strong></td></tr>
-            <tr><td style="color:var(--text-muted); padding:4px 0;">Acurácia</td><td style="color:var(--green); padding-left:12px;"><strong>87.9%</strong></td></tr>
-            <tr><td style="color:var(--text-muted); padding:4px 0;">Tempo (5 épocas)</td><td style="color:var(--orange); padding-left:12px;"><strong>26.4 min</strong></td></tr>
-            <tr><td style="color:var(--text-muted); padding:4px 0;">Risco overfitting</td><td style="color:var(--orange); padding-left:12px;"><strong>Médio-Alto</strong></td></tr>
+        <div class="card purple" style="padding:16px 24px;">
+          <h3 style="color:var(--purple); margin-bottom:8px;">⚡ Fine-Tuning Parcial</h3>
+          <table class="tight" style="font-size:13px;">
+            <tr><td style="color:var(--text-muted); padding:2px 0;">Params treináveis</td><td style="color:var(--text); padding-left:12px;"><strong>8.4M</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:2px 0;">Acurácia</td><td style="color:var(--green); padding-left:12px;"><strong>~86%</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:2px 0;">Tempo (5 épocas)</td><td style="color:var(--text); padding-left:12px;"><strong>~1 min (T4)</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:2px 0;">Risco overfitting</td><td style="color:var(--yellow); padding-left:12px;"><strong>Médio</strong></td></tr>
           </table>
         </div>
         <p style="font-size:11.5px; color:var(--text-muted); line-height:1.55; padding: 4px 2px;">
-          ⚠️ <strong style="color:var(--text-muted);">Nota:</strong> 87.9% foi obtido rodando o Fine-Tuning Completo por ~2h em CPU local.
-          No Colab com GPU e menos épocas, espere acurácia um pouco menor — o que importa é a <em>tendência</em>: Fine-Tuning &gt; Feature Extraction &gt; Scratch (treinar do zero).
+          ⚠️ Rede inteira (Fine-Tuning Completo, 11.2M): ~88% no benchmark. Tendência: Fine-Tuning &gt; Feature Extraction &gt; Scratch.
         </p>
       </div>
     </div>
@@ -1434,11 +1455,11 @@ optimizer = optim.<span class="cls">SGD</span>([
 
     <p style="margin-bottom:24px;">Notebook guiado para comparar <em>feature extraction</em> com <em>fine-tuning parcial</em>, analisando ganho de acurácia versus custo computacional.</p>
 
-    <ul class="list">
+    <ul class="list compact">
       <li>
         <span class="bullet">1</span>
         <div>
-          <strong>Partir do modelo treinado</strong> — Carrega pesos da Prática 1 (ou re-inicializa com ImageNet). Garante ponto de comparação justo.
+          <strong>Linha de base</strong> — Treina de novo a Feature Extraction (mesmos dados, mesmas épocas) para uma comparação justa.
         </div>
       </li>
       <li>
@@ -1468,7 +1489,7 @@ optimizer = optim.<span class="cls">SGD</span>([
     </ul>
 
     <div class="info-strip" style="margin-top:12px;">
-      📁 Arquivo: <code>Google Collabs/02_fine_tuning_cifar10.ipynb</code>
+      📁 Em aula: <code>lab02_fine_tuning.ipynb</code> &nbsp;·&nbsp; 🏠 Dever de casa: <code>lab03_homework.ipynb</code> (treino do zero vs. Fine-Tuning sem roteiro, e Transferência Negativa)
     </div>
 
     <div class="slide-footer">
@@ -1509,13 +1530,12 @@ optimizer = optim.<span class="cls">SGD</span>([
           <p style="font-size:14px; margin-bottom:8px;">
             <strong>Email:</strong> <code style="color:var(--accent); font-size:13px;">rodrigo@aluno.puc-rio.br</code>
           </p>
-          <p style="font-size:13px; color:var(--text-muted); line-height:1.5;">
-            Ou procure pessoalmente após a aula: tanto eu, Rodrigo, quanto a professora estamos disponíveis para conversar.<br>
-
-		<img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=mailto:rodrigo@aluno.puc-rio.br" 
-	    	 alt="QR Code de E-mail" 	
- 		    style="width: 120px; height: 120px;">
-          </p>
+          <div style="display:flex; gap:16px; align-items:center;">
+            <p style="font-size:13px; color:var(--text-muted); line-height:1.5; flex:1;">
+              Ou procure pessoalmente após a aula: tanto eu, Rodrigo, quanto a professora estamos disponíveis para conversar.
+            </p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=mailto:rodrigo@aluno.puc-rio.br" alt="QR Code de E-mail" style="width: 84px; height: 84px; flex-shrink:0;">
+          </div>
         </div>
       </div>
 
@@ -1567,12 +1587,13 @@ optimizer = optim.<span class="cls">SGD</span>([
 
   // ── Chart data (ResNet-18 Benchmark on CIFAR-10) ────────────────────────
   const epochs      = [1, 2, 3, 4, 5];
-  const lossData    = [1.1282, 0.6661, 0.6282, 0.5734, 0.5492];
-  const accData     = [0.7240, 0.7360, 0.7560, 0.7340, 0.7450];
-  const lossScratch = [2.0210, 1.6629, 1.5229, 1.3871, 1.1587];
-  const accScratch  = [0.3080, 0.3190, 0.3490, 0.4270, 0.3780];
-  const lossFT      = [1.4790, 0.5737, 0.3451, 0.2232, 0.1509];
-  const accFT       = [0.7480, 0.8410, 0.8640, 0.8720, 0.8790];
+  // Medido em 2026-09-28 com os próprios notebooks: lab01 (FE), lab02 (FT parcial), lab03 Parte A (do zero)
+  const lossData    = [0.8428, 0.4514, 0.4212, 0.3490, 0.3256];
+  const accData     = [0.8240, 0.8100, 0.8240, 0.8290, 0.8450];
+  const lossScratch = [2.0211, 1.6667, 1.4522, 1.2811, 1.1269];
+  const accScratch  = [0.1830, 0.4250, 0.4050, 0.4420, 0.3640];
+  const lossFT      = [0.8101, 0.3787, 0.3040, 0.2451, 0.2125];
+  const accFT       = [0.8240, 0.8530, 0.8620, 0.8650, 0.8680];
 
   const chartDefaults = {
     responsive: true, maintainAspectRatio: false,
@@ -1597,7 +1618,7 @@ optimizer = optim.<span class="cls">SGD</span>([
         datasets: [
           { label: 'Feature Extraction', data: lossData,    borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.05)', tension: 0.4, fill: true },
           { label: 'Treinamento do Zero', data: lossScratch, borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,.05)', tension: 0.4, fill: true },
-          { label: 'Fine-Tuning Completo', data: lossFT,      borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,.05)', tension: 0.4, fill: true }
+          { label: 'Fine-Tuning Parcial', data: lossFT,      borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,.05)', tension: 0.4, fill: true }
         ]
       },
       options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, title: { display: true, text: 'Curva de Loss (treino)', color: '#e6edf3', font: { size: 14, family: 'Inter' } } } }
@@ -1609,7 +1630,7 @@ optimizer = optim.<span class="cls">SGD</span>([
         datasets: [
           { label: 'Feature Extraction', data: accData,     borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.05)', tension: 0.4, fill: true },
           { label: 'Treinamento do Zero', data: accScratch,  borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,.05)', tension: 0.4, fill: true },
-          { label: 'Fine-Tuning Completo', data: accFT,       borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,.05)', tension: 0.4, fill: true }
+          { label: 'Fine-Tuning Parcial', data: accFT,       borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,.05)', tension: 0.4, fill: true }
         ]
       },
       options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 0, max: 1 } },
@@ -1643,8 +1664,8 @@ optimizer = optim.<span class="cls">SGD</span>([
   btnP.addEventListener('click', () => { if (cur > 0) show(cur - 1); });
 
   document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') show(cur + 1);
-    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  show(cur - 1);
+    if ((e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') && cur < total - 1) show(cur + 1);
+    if ((e.key === 'ArrowLeft'  || e.key === 'ArrowUp') && cur > 0) show(cur - 1);
   });
 
   show(0);
