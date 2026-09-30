@@ -1,5 +1,16 @@
 # Transfer Learning na Prática — ENG4502
 
+<p align="center">
+  <a href="https://rodrigohuber.github.io/aula-grad/SLIDES_AULA-transfer_learning.html">
+    <img src="assets/abrir-slides.svg" alt="Abrir os slides da aula no navegador" width="760">
+  </a>
+</p>
+
+<p align="center">
+  <sub>Os slides abrem direto no navegador. O <b>simulador interativo</b> abre de dentro deles (slide de resultados → 🎮 Abrir Simulador Interativo), ou <a href="https://rodrigohuber.github.io/aula-grad/SLIDES_AULA-simulator.html">direto por aqui</a>.<br>
+  Prefere offline? Baixe <code>SLIDES_AULA-transfer_learning.html</code> e <code>SLIDES_AULA-simulator.html</code> para a <b>mesma pasta</b> — o link entre eles continua funcionando.</sub>
+</p>
+
 Material dos alunos da disciplina **Introdução à Ciência de Dados** (PUC-Rio).
 
 Nesta sequência de notebooks você vai implementar as principais técnicas de **Transfer Learning** usando uma rede convolucional pré-treinada (ResNet-18) no dataset CIFAR-10 — tudo rodando no **Google Colab**, sem instalar nada no seu computador.
