@@ -1,4 +1,4 @@
-# Transfer Learning na Prática — ENG4502
+# Transfer Learning na Prática — ENG4502 · IND2622
 
 <p align="center">
   <a href="https://rodrigohuber.github.io/aula-grad/SLIDES_AULA-transfer_learning.html">
@@ -11,7 +11,12 @@
   Prefere offline? Baixe <code>SLIDES_AULA-transfer_learning.html</code> e <code>SLIDES_AULA-simulator.html</code> para a <b>mesma pasta</b> — o link entre eles continua funcionando.</sub>
 </p>
 
-Material dos alunos da disciplina **Introdução à Ciência de Dados** (PUC-Rio).
+Material dos alunos de duas disciplinas da PUC-Rio:
+
+- **ENG4502 — Introdução à Ciência de Dados** (graduação)
+- **IND2622 — Ciência de Dados para Processos de Negócio** (mestrado e doutorado)
+
+É a mesma aula nas duas turmas, com os mesmos slides, simulador e notebooks. O que muda é a profundidade com que cada tema é explorado em sala.
 
 Nesta sequência de notebooks você vai implementar as principais técnicas de **Transfer Learning** usando uma rede convolucional pré-treinada (ResNet-18) no dataset CIFAR-10 — tudo rodando no **Google Colab**, sem instalar nada no seu computador.
 
