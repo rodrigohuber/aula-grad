@@ -1698,6 +1698,29 @@ optimizer = optim.<span class="cls">SGD</span>([
     if ((e.key === 'ArrowLeft'  || e.key === 'ArrowUp') && cur > 0) show(cur - 1);
   });
 
+  // Clique: 40% direito da tela avança, 25% esquerdo volta, o meio não faz nada.
+  // Links, botões e gráficos mantêm o próprio clique; texto selecionado não navega.
+  document.addEventListener('click', e => {
+    if (e.button !== 0 || e.target.closest('a, button, canvas, input, select, textarea, summary, label')) return;
+    if (String(window.getSelection())) return;
+    const x = e.clientX / window.innerWidth;
+    if (x > 0.60 && cur < total - 1) show(cur + 1);
+    else if (x < 0.25 && cur > 0) show(cur - 1);
+  });
+
+  // Roda do mouse / trackpad: um gesto = um slide (a inércia do trackpad não pula vários).
+  let wheelLock = false, wheelTimer = null;
+  window.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+    if (!wheelLock) {
+      if (e.deltaY > 0 && cur < total - 1) show(cur + 1);
+      else if (e.deltaY < 0 && cur > 0) show(cur - 1);
+      wheelLock = true;
+    }
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(() => { wheelLock = false; }, 300);
+  }, { passive: true });
+
   show(0);
 
 
